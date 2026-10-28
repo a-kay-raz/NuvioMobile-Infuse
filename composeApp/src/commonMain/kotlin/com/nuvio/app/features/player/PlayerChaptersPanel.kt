@@ -206,7 +206,7 @@ private fun ChapterRow(
                 }
             }
             Text(
-                text = chapter.title ?: stringResource(Res.string.compose_player_chapter_number, number),
+                text = chapter.title.ifBlank { stringResource(Res.string.compose_player_chapter_number, number) },
                 style = MaterialTheme.typography.titleMedium,
                 color = if (isCurrent) accent else tokens.colors.textPrimary,
                 maxLines = 1,

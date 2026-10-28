@@ -35,6 +35,29 @@ import nuvio.composeapp.generated.resources.player_chapter_number
 import nuvio.composeapp.generated.resources.player_chapters
 import org.jetbrains.compose.resources.stringResource
 
+internal object PlayerChapters {
+    const val PREVIOUS_RESTART_THRESHOLD_MS = 3_000L
+
+    fun normalize(chapters: List<PlayerChapter>): List<PlayerChapter> {
+        val sorted = chapters.filter { it.startMs >= 0L }.sortedBy { it.startMs }.distinctBy { it.startMs }
+        return if (sorted.size < 2) emptyList() else sorted
+    }
+
+    fun indexAt(chapters: List<PlayerChapter>, positionMs: Long): Int =
+        chapters.indexOfLast { it.startMs <= positionMs }
+
+    fun nextStartMs(chapters: List<PlayerChapter>, positionMs: Long): Long? =
+        chapters.firstOrNull { it.startMs > positionMs }?.startMs
+
+    fun previousStartMs(chapters: List<PlayerChapter>, positionMs: Long): Long? {
+        val index = indexAt(chapters, positionMs)
+        if (index < 0) return null
+        val current = chapters[index].startMs
+        if (positionMs - current > PREVIOUS_RESTART_THRESHOLD_MS || index == 0) return current
+        return chapters[index - 1].startMs
+    }
+}
+
 internal fun List<PlayerChapter>.currentChapterIndex(positionMs: Long): Int {
     var index = -1
     for (i in indices) {

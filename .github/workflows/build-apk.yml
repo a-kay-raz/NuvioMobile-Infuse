@@ -45,8 +45,19 @@ jobs:
           rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
           cargo install cargo-ndk --locked
 
+      - name: Restore release keystore from secrets
+        run: |
+          echo "$NUVIO_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/nuvio-enhanced.jks"
+        env:
+          NUVIO_RELEASE_KEYSTORE_BASE64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
+
       - name: Build Android Release APK
         run: ./gradlew :androidApp:assembleFullRelease --stacktrace
+        env:
+          NUVIO_RELEASE_STORE_FILE: ${{ runner.temp }}/nuvio-enhanced.jks
+          NUVIO_RELEASE_STORE_PASSWORD: ${{ secrets.NUVIO_RELEASE_STORE_PASSWORD }}
+          NUVIO_RELEASE_KEY_ALIAS: ${{ secrets.NUVIO_RELEASE_KEY_ALIAS }}
+          NUVIO_RELEASE_KEY_PASSWORD: ${{ secrets.NUVIO_RELEASE_KEY_PASSWORD }}
 
       - name: Locate and Collect APKs
         id: collect-apks

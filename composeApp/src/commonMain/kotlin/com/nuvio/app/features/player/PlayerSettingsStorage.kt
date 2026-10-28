@@ -29,6 +29,10 @@ internal expect object PlayerSettingsStorage {
     fun saveSkipBackwardSeconds(seconds: Int)
     fun loadSkipForwardSeconds(): Int?
     fun saveSkipForwardSeconds(seconds: Int)
+    fun loadLegacyBottomButtons(): String?
+    fun saveLegacyBottomButtons(layout: String)
+    fun loadLegacyTopButtons(): String?
+    fun saveLegacyTopButtons(layout: String)
     fun loadTouchGesturesEnabled(): Boolean?
     fun saveTouchGesturesEnabled(enabled: Boolean)
     fun loadSwipeToSeekEnabled(): Boolean?

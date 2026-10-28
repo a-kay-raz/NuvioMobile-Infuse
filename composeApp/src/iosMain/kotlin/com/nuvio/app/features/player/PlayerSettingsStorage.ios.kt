@@ -29,6 +29,8 @@ actual object PlayerSettingsStorage {
     private const val holdToSpeedEnabledKey = "hold_to_speed_enabled"
     private const val holdToSpeedValueKey = "hold_to_speed_value"
     private const val skipBackwardSecondsKey = "skip_backward_seconds"
+    private const val legacyBottomButtonsKey = "legacy_player_bottom_buttons"
+    private const val legacyTopButtonsKey = "legacy_player_top_buttons"
     private const val skipForwardSecondsKey = "skip_forward_seconds"
     private const val touchGesturesEnabledKey = "touch_gestures_enabled"
     private const val swipeToSeekEnabledKey = "swipe_to_seek_enabled"
@@ -337,6 +339,20 @@ actual object PlayerSettingsStorage {
 
     actual fun saveHoldToSpeedValue(speed: Float) {
         NSUserDefaults.standardUserDefaults.setFloat(speed, forKey = ProfileScopedKey.of(holdToSpeedValueKey))
+    }
+
+    actual fun loadLegacyBottomButtons(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(legacyBottomButtonsKey))
+
+    actual fun saveLegacyBottomButtons(layout: String) {
+        NSUserDefaults.standardUserDefaults.setObject(layout, forKey = ProfileScopedKey.of(legacyBottomButtonsKey))
+    }
+
+    actual fun loadLegacyTopButtons(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(legacyTopButtonsKey))
+
+    actual fun saveLegacyTopButtons(layout: String) {
+        NSUserDefaults.standardUserDefaults.setObject(layout, forKey = ProfileScopedKey.of(legacyTopButtonsKey))
     }
 
     actual fun loadSkipBackwardSeconds(): Int? = loadInt(skipBackwardSecondsKey)

@@ -70,6 +70,7 @@ import com.nuvio.app.features.player.IosTargetPrimaries
 import com.nuvio.app.features.player.IosTargetTransfer
 import com.nuvio.app.features.player.PlaybackMemoryInfo
 import com.nuvio.app.features.player.safeBufferLimitMb
+import com.nuvio.app.features.player.LegacyPlayerButtonLayouts
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.player.STREAM_AUTO_PLAY_TIMEOUT_VALUES
 import com.nuvio.app.features.player.SubtitleBackgroundColorSwatches
@@ -364,6 +365,8 @@ private fun PlaybackSettingsSection(
     var showDecoderPriorityDialog by remember { mutableStateOf(false) }
     var showHoldToSpeedValueDialog by remember { mutableStateOf(false) }
     var skipDirectionDialog by remember { mutableStateOf<Boolean?>(null) } // true = forward
+    var showLegacyBottomButtonsDialog by remember { mutableStateOf(false) }
+    var showLegacyTopButtonsDialog by remember { mutableStateOf(false) }
     var showIosAudioOutputDialog by remember { mutableStateOf(false) }
     var showIosHardwareDecoderDialog by remember { mutableStateOf(false) }
     var showIosTargetPrimariesDialog by remember { mutableStateOf(false) }
@@ -423,6 +426,21 @@ private fun PlaybackSettingsSection(
                         description = stringResource(Res.string.settings_playback_toolbar_layout_description),
                         isTablet = isTablet,
                         onClick = { showToolbarLayoutDialog = true },
+                    )
+                } else {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsNavigationRow(
+                        title = stringResource(Res.string.settings_playback_legacy_top_buttons),
+                        description = stringResource(Res.string.settings_playback_legacy_top_buttons_description),
+                        isTablet = isTablet,
+                        onClick = { showLegacyTopButtonsDialog = true },
+                    )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsNavigationRow(
+                        title = stringResource(Res.string.settings_playback_legacy_bottom_buttons),
+                        description = stringResource(Res.string.settings_playback_legacy_bottom_buttons_description),
+                        isTablet = isTablet,
+                        onClick = { showLegacyBottomButtonsDialog = true },
                     )
                 }
                 SettingsGroupDivider(isTablet = isTablet)
@@ -1914,6 +1932,29 @@ private fun PlaybackSettingsSection(
                 showLibmpvVideoOutputDialog = false
             },
             onDismiss = { showLibmpvVideoOutputDialog = false },
+        )
+    }
+
+
+    if (showLegacyTopButtonsDialog) {
+        LegacyPlayerButtonsSettingsDialog(
+            title = stringResource(Res.string.settings_playback_legacy_top_buttons),
+            layout = autoPlayPlayerSettings.legacyTopButtons,
+            defaultLayout = LegacyPlayerButtonLayouts.DefaultTop,
+            label = { it.labelRes },
+            onLayoutChange = PlayerSettingsRepository::setLegacyTopButtons,
+            onDismiss = { showLegacyTopButtonsDialog = false },
+        )
+    }
+
+    if (showLegacyBottomButtonsDialog) {
+        LegacyPlayerButtonsSettingsDialog(
+            title = stringResource(Res.string.settings_playback_legacy_bottom_buttons),
+            layout = autoPlayPlayerSettings.legacyBottomButtons,
+            defaultLayout = LegacyPlayerButtonLayouts.DefaultBottom,
+            label = { it.labelRes },
+            onLayoutChange = PlayerSettingsRepository::setLegacyBottomButtons,
+            onDismiss = { showLegacyBottomButtonsDialog = false },
         )
     }
 

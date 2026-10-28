@@ -3637,4 +3637,12 @@
     <string name="nuvio_enhanced_hide_player_resize_desc">Hide the aspect ratio / resize button from bottom action bar.</string>
     <string name="nuvio_enhanced_hide_player_speed">Hide playback speed button</string>
     <string name="nuvio_enhanced_hide_player_speed_desc">Hide the speed adjustment pill from bottom action bar.</string>
+    <string name="settings_playback_legacy_bottom_buttons">Bottom bar buttons</string>
+    <string name="settings_playback_legacy_bottom_buttons_description">Choose which buttons appear in the bottom bar and their order.</string>
+    <string name="settings_playback_legacy_top_buttons">Top bar buttons</string>
+    <string name="settings_playback_legacy_top_buttons_description">Choose which buttons appear in the top bar and their order. Close always stays.</string>
+    <string name="settings_playback_legacy_buttons_shown">Shown</string>
+    <string name="settings_playback_legacy_buttons_hidden">Hidden</string>
+    <string name="settings_playback_legacy_buttons_hide">Hide</string>
+    <string name="settings_playback_legacy_buttons_show">Show</string>
 </resources>

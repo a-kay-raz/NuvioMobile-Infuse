@@ -1034,6 +1034,8 @@ object TmdbMetadataService {
         val genres = details.genres.mapNotNull { it.name?.trim()?.takeIf(String::isNotBlank) }
         val description = details.overview?.trim()?.takeIf(String::isNotBlank)
         val releaseInfo = details.releaseDate ?: details.firstAirDate
+        val originalLanguage = details.originalLanguage?.trim()?.lowercase()?.takeIf(String::isNotBlank)
+        val originalArtworkLanguage = originalLanguage.takeIf { useOriginalTitle }
         val localizedTitle = listOf(details.title, details.name).firstNotNullOfOrNull { it?.trim()?.takeIf(String::isNotBlank) }
         val people = buildPeople(
             details = details,
@@ -1062,9 +1064,21 @@ object TmdbMetadataService {
             localizedTitle = localizedTitle,
             description = description,
             genres = genres,
-            backdrop = buildImageUrl(details.backdropPath, "w1280"),
-            logo = buildImageUrl(images?.logos.orEmpty().selectBestLocalizedImagePath(normalizedLanguage), "w500"),
-            poster = buildImageUrl(details.posterPath, "w500"),
+            backdrop = buildImageUrl(
+                originalImagePath(images?.backdrops, originalArtworkLanguage) ?: details.backdropPath,
+                "w1280",
+            ),
+            logo = buildImageUrl(
+                images?.logos.orEmpty().selectOriginalOrLocalizedImagePath(
+                    normalizedLanguage = normalizedLanguage,
+                    originalLanguage = originalArtworkLanguage,
+                ),
+                "w500",
+            ),
+            poster = buildImageUrl(
+                originalImagePath(images?.posters, originalArtworkLanguage) ?: details.posterPath,
+                "w500",
+            ),
             people = people,
             director = directors,
             writer = writers,
@@ -1816,6 +1830,14 @@ private fun List<MetaPerson>.dedupePeople(): List<MetaPerson> {
         }
     }
     return merged.values.toList()
+}
+
+private fun originalImagePath(images: List<TmdbImage>?, originalLanguage: String?): String? {
+    originalLanguage ?: return null
+    return images.orEmpty()
+        .firstOrNull { !it.filePath.isNullOrBlank() && it.iso6391.equals(originalLanguage, ignoreCase = true) }
+        ?.filePath
+        ?.trim()
 }
 
 private fun buildImageUrl(path: String?, size: String): String? {

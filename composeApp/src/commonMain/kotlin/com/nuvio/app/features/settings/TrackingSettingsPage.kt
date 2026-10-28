@@ -56,6 +56,7 @@ import nuvio.composeapp.generated.resources.settings_tracking_ratings_section
 import nuvio.composeapp.generated.resources.tracking_source_mdblist
 import nuvio.composeapp.generated.resources.tracking_source_anilist
 import nuvio.composeapp.generated.resources.tracking_source_wetrakr
+import nuvio.composeapp.generated.resources.tracking_source_publicmetadb
 import nuvio.composeapp.generated.resources.settings_wetrakr_library_description
 import nuvio.composeapp.generated.resources.settings_wetrakr_progress_description
 import nuvio.composeapp.generated.resources.settings_anilist_library_description

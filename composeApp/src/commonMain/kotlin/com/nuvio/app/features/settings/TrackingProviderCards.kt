@@ -91,6 +91,8 @@ import nuvio.composeapp.generated.resources.settings_anilist_disconnect_descript
 import nuvio.composeapp.generated.resources.anilist_logo
 import nuvio.composeapp.generated.resources.settings_wetrakr_disconnect_description
 import nuvio.composeapp.generated.resources.wetrakr_logo
+import nuvio.composeapp.generated.resources.settings_publicmetadb_disconnect_description
+import nuvio.composeapp.generated.resources.publicmetadb_logo
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_cancel
 import nuvio.composeapp.generated.resources.settings_tracking_connect_with_code

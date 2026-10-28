@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -29,7 +29,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: wrapper
 
@@ -67,7 +67,7 @@ jobs:
           ls -la build-apks/
 
       - name: Upload APK artifact (no release)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: success()
         with:
           name: nuvio-apk

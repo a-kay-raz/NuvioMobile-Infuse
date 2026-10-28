@@ -269,6 +269,18 @@ internal fun LazyListScope.settingsRootContent(
                         isTablet = isTablet,
                         onClick = onLicensesAttributionsClick,
                     )
+                    if (onCheckForUpdatesClick != null) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        UpdateChannelSettingsRow(isTablet = isTablet)
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.compose_settings_root_check_updates_title),
+                            description = stringResource(Res.string.compose_settings_root_check_updates_description),
+                            icon = Icons.Rounded.CloudDownload,
+                            isTablet = isTablet,
+                            onClick = onCheckForUpdatesClick,
+                        )
+                    }
                     if (onTestUpdateBannerClick != null) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(

@@ -13,6 +13,7 @@ import com.nuvio.app.features.mdblist.MdbListMetadataService
 import com.nuvio.app.features.mdblist.MdbListSettings
 import com.nuvio.app.features.mdblist.MdbListSettingsRepository
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
+import com.nuvio.app.features.tmdb.TmdbTitleLanguage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -114,7 +115,12 @@ internal object HomeHeroMetaRepository {
 
 internal fun MetaPreview.withHeroMeta(meta: HomeHeroMeta): MetaPreview {
     val details = meta.details
+    val useOriginalTitle = TmdbSettingsRepository.snapshot().let {
+        it.enabled && it.titleLanguage == TmdbTitleLanguage.ORIGINAL
+    }
     return copy(
+        name = details?.name?.takeIf { useOriginalTitle && it.isNotBlank() } ?: name,
+        logo = details?.logo?.takeIf { useOriginalTitle && it.isNotBlank() } ?: logo,
         genres = details?.genres?.takeIf { it.isNotEmpty() } ?: genres,
         imdbRating = details?.imdbRating?.takeIf { it.isNotBlank() } ?: imdbRating,
         runtime = details?.runtime?.takeIf { it.isNotBlank() } ?: runtime,

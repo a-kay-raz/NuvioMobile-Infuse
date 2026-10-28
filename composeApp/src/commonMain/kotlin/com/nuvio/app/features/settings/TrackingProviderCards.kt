@@ -240,6 +240,7 @@ internal fun TrackingProviderCards(
         MdbListProviderCard(Modifier.fillMaxWidth())
         AniListProviderCard(Modifier.fillMaxWidth())
         WeTrakrProviderCard(Modifier.fillMaxWidth())
+        PublicMetaDbProviderCard(Modifier.fillMaxWidth())
     }
 
     deviceCodeBrand?.let { brand ->

@@ -28,6 +28,7 @@ actual object TmdbSettingsStorage {
     private const val useSeasonPostersKey = "tmdb_use_season_posters"
     private const val useMoreLikeThisKey = "tmdb_use_more_like_this"
     private const val useCollectionsKey = "tmdb_use_collections"
+    private const val titleLanguageKey = "tmdb_title_language"
     private val syncKeys = listOf(
         enabledKey,
         languageKey,
@@ -147,6 +148,16 @@ actual object TmdbSettingsStorage {
 
     actual fun saveUseCollections(enabled: Boolean) {
         saveBoolean(useCollectionsKey, enabled)
+    }
+
+    actual fun loadTitleLanguage(): String? =
+        preferences?.getString(ProfileScopedKey.of(titleLanguageKey), null)
+
+    actual fun saveTitleLanguage(value: String) {
+        preferences
+            ?.edit()
+            ?.putString(ProfileScopedKey.of(titleLanguageKey), value)
+            ?.apply()
     }
 
     private fun loadBoolean(key: String): Boolean? =

@@ -1,12 +1,18 @@
 package com.nuvio.app.features.settings
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import com.nuvio.app.core.ui.rememberAnimatedAccentBrush
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -36,6 +42,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -276,6 +284,7 @@ internal fun SettingsNavigationRow(
     enabled: Boolean = true,
     isTablet: Boolean,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
+    highlighted: Boolean = false,
     onClick: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -359,6 +368,7 @@ internal fun SettingsSwitchRow(
     enabled: Boolean = true,
     isTablet: Boolean,
     horizontalPadding: Dp = if (isTablet) 20.dp else 16.dp,
+    highlighted: Boolean = false,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -394,17 +404,57 @@ internal fun SettingsSwitchRow(
                 )
             }
         }
-        Switch(
+        SettingsGradientSwitch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
             enabled = enabled,
+            highlighted = highlighted,
             modifier = Modifier.padding(start = 4.dp),
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = tokens.colors.onAccent,
-                checkedTrackColor = tokens.colors.accent,
-                uncheckedThumbColor = tokens.colors.textMuted,
-                uncheckedTrackColor = tokens.colors.borderDefault,
-            ),
+        )
+    }
+}
+
+@Composable
+private fun SettingsGradientSwitch(
+    checked: Boolean,
+    enabled: Boolean,
+    highlighted: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val tokens = MaterialTheme.nuvio
+    val trackShape = RoundedCornerShape(999.dp)
+    val trackBrush = rememberAnimatedAccentBrush().takeIf { checked && enabled }
+    val thumbOffset by animateDpAsState(
+        targetValue = if (checked) 20.dp else 0.dp,
+        animationSpec = tween(durationMillis = 180),
+        label = "settings_switch_thumb",
+    )
+    Box(
+        modifier = modifier
+            .size(width = 52.dp, height = 32.dp)
+            .clip(trackShape)
+            .then(
+                if (trackBrush != null) {
+                    Modifier.background(trackBrush)
+                } else {
+                    Modifier.background(
+                        when {
+                            checked -> tokens.colors.accent
+                            highlighted -> tokens.colors.accent.copy(alpha = 0.28f)
+                            else -> tokens.colors.borderDefault
+                        },
+                    )
+                },
+            )
+            .padding(4.dp)
+            .alpha(if (enabled) 1f else tokens.opacity.medium),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(x = thumbOffset)
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(if (checked) tokens.colors.onAccent else tokens.colors.textMuted),
         )
     }
 }

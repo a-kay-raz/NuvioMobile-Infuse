@@ -1,7 +1,6 @@
 package com.nuvio.app.features.player
 
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
-import com.nuvio.app.core.ui.LocalFold
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.party.PartyRepository
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -88,6 +87,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         cancelNextEpisodeAutoPlay()
         isScrubbingTimeline = false
         scrubbingPositionMs = null
+        seekPreview = null
         liveGestureFeedback = null
         renderedGestureFeedback = null
         lockedOverlayVisible = false
@@ -118,8 +118,6 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         showSourcesPanel = false
         showEpisodesPanel = false
         showChaptersPanel = false
-        chapters = emptyList()
-        chaptersLoadedForSourceUrl = null
         episodeStreamsPanelState = EpisodeStreamsPanelState()
         PlayerStreamsRepository.clearEpisodeStreams()
         SubtitleRepository.clear()
@@ -315,21 +313,6 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
     }
 
     LaunchedEffect(
-        playbackSnapshot.isLoading,
-        playerController,
-        playerControllerSourceUrl,
-        activeSourceUrl,
-        playerSettingsUiState.androidExoChaptersEnabled,
-    ) {
-        clearChaptersIfDisabled()
-        if (!playbackSnapshot.isLoading) loadChaptersIfNeeded()
-    }
-
-    LaunchedEffect(playbackSnapshot.chapters, chapters, playerSettingsUiState.androidExoChaptersEnabled) {
-        adoptSnapshotChaptersIfNeeded()
-    }
-
-    LaunchedEffect(
         playerController,
         playbackSnapshot.isLoading,
         preferredAudioSelectionApplied,
@@ -438,9 +421,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
 
 @Composable
 private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
-    val folded = LocalFold.current != null
     LaunchedEffect(
-        folded,
         controlsVisible,
         controlsActivityTick,
         isScrubbingTimeline,
@@ -463,11 +444,11 @@ private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
         ) {
             return@LaunchedEffect
         }
-        delay(if (folded) 5000 else 3500)
+        delay(3500)
         controlsVisible = false
     }
 
-    LaunchedEffect(playerControlsLocked, lockedOverlayVisible) {
+    LaunchedEffect(playerControlsLocked, lockedOverlayVisible, controlsActivityTick) {
         if (!playerControlsLocked || !lockedOverlayVisible) return@LaunchedEffect
         delay(PlayerLockedOverlayDurationMs)
         lockedOverlayVisible = false
@@ -664,6 +645,7 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
     LaunchedEffect(
         playerMetaVideos,
         shuffleSettings,
+        randomNextEpisodeMode,
         profileId,
         parentMetaId,
         activeSeasonNumber,
@@ -677,7 +659,15 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         }
         val curSeason = activeSeasonNumber ?: return@LaunchedEffect
         val curEpisode = activeEpisodeNumber ?: return@LaunchedEffect
-        val nextVideo = if (shuffleSettings.enabled) {
+        val nextVideo = if (randomNextEpisodeMode) {
+            PlayerNextEpisodeRules.resolveNextEpisode(
+                videos = playerMetaVideos,
+                currentSeason = curSeason,
+                currentEpisode = curEpisode,
+                randomMode = true,
+                randomHistoryKey = parentMetaId,
+            )
+        } else if (shuffleSettings.enabled) {
             EpisodeShuffleRepository.shuffle.select(
                 profileId, parentMetaId, playerMetaVideos, shuffleSettings.includeWatched,
                 watchedShuffleEpisodes(parentMetaId, parentMetaType, playerMetaVideos, watchedUiState.watchedKeys),

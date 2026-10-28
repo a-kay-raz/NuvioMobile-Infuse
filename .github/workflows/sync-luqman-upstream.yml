@@ -1,0 +1,33 @@
+name: "Sync Luqman Upstream"
+
+"on":
+  schedule:
+    # Runs every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-and-pr:
+    name: Check Luqman Updates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.ADMIN_PAT }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Check for New Upstream Commits
+        id: sync_check
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_PAT }}
+        run: bash .github/scripts/sync-upstream.sh

@@ -119,7 +119,6 @@ internal fun PlayerScreenRuntime.openExternalSourceUrl(stream: StreamItem): Bool
     openExternalUrl(url)
     showSourcesPanel = false
     showEpisodesPanel = false
-    showChaptersPanel = false
     controlsVisible = true
     return true
 }
@@ -657,7 +656,6 @@ internal fun PlayerScreenRuntime.openSourcesPanel() {
     showSourcesPanel = true
     showEpisodesPanel = false
     showLiveChannelsPanel = false
-    showChaptersPanel = false
     controlsVisible = false
 }
 
@@ -678,7 +676,6 @@ internal fun PlayerScreenRuntime.openEpisodesPanel() {
     showEpisodesPanel = true
     showSourcesPanel = false
     showLiveChannelsPanel = false
-    showChaptersPanel = false
     controlsVisible = false
 }
 
@@ -689,7 +686,6 @@ private fun PlayerScreenRuntime.resetEpisodePanelAndNextEpisodeState() {
     showSourcesPanel = false
     showEpisodesPanel = false
     showLiveChannelsPanel = false
-    showChaptersPanel = false
     episodeStreamsPanelState = EpisodeStreamsPanelState()
     cancelNextEpisodeAutoPlay()
     PlayerStreamsRepository.clearEpisodeStreams()

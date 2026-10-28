@@ -19,6 +19,7 @@ import com.nuvio.app.features.servers.ServerItemRef
 import com.nuvio.app.features.servers.ServerUserStateProjection
 import com.nuvio.app.features.servers.message
 import com.nuvio.app.features.servers.serverFailure
+import com.nuvio.app.features.plugins.MediaTitleCleaner
 import com.nuvio.app.features.tmdb.TmdbMetadataService
 import com.nuvio.app.features.tmdb.TmdbService
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
@@ -44,6 +45,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
+import com.nuvio.app.features.cloudstream.parseCloudStreamRouteId
+import com.nuvio.app.features.cloudstream.toMetaDetails
 
 object MetaDetailsRepository {
     private data class CachedMetaEntry(
@@ -135,6 +139,33 @@ object MetaDetailsRepository {
         _uiState.value = MetaDetailsUiState(isLoading = true)
 
         scope.launch {
+            parseCloudStreamRouteId(id)?.let { route ->
+                val cloudMeta = withTimeoutOrNull(CLOUDSTREAM_DETAIL_TIMEOUT_MS) {
+                    CloudStreamRepository.load(route.providerId, route.data)
+                        .getOrNull()
+                        ?.toMetaDetails()
+                }
+                if (activeRequestKey != requestKey) return@launch
+                if (cloudMeta != null) {
+                    val resolvedMeta = resolveExtensionEnrichedMeta(cloudMeta)
+                    publishLoadedMeta(
+                        requestKey = requestKey,
+                        meta = resolvedMeta,
+                        fallbackItemId = id,
+                        fallbackItemType = type,
+                        mdbListSettings = mdbListSettings,
+                        metaScreenSettingsFingerprint = metaScreenSettingsFingerprint,
+                    )
+                } else {
+                    log.w { "Failed to load CloudStream meta for provider=${route.providerId} data=${route.data}" }
+                    _uiState.value = MetaDetailsUiState(
+                        errorMessage = "Could not load content details",
+                    )
+                    activeRequestKey = null
+                }
+                return@launch
+            }
+
             val metaLookupId = resolveMetaLookupId(itemId = id, itemType = type)
             val manifests = findReadyMetaManifests(type = type, id = metaLookupId)
             InAppLogger.info("Metadata/MetaDetailsRepository", "Resolved meta lookup id=$metaLookupId manifests=${manifests.size} originalId=$id")
@@ -240,6 +271,18 @@ object MetaDetailsRepository {
                 .onFailure { if (it is CancellationException) throw it }
                 .getOrNull()
                 ?.also { if (cacheResult) cachedMetaByRequestKey[requestKey] = CachedMetaEntry(baseMeta = it) }
+        }
+
+        parseCloudStreamRouteId(id)?.let { route ->
+            val cloudMeta = withTimeoutOrNull(CLOUDSTREAM_DETAIL_TIMEOUT_MS) {
+                CloudStreamRepository.load(route.providerId, route.data)
+                    .getOrNull()
+                    ?.toMetaDetails()
+            }
+            if (cloudMeta != null && cacheResult) {
+                cachedMetaByRequestKey[requestKey] = CachedMetaEntry(baseMeta = cloudMeta)
+            }
+            return cloudMeta
         }
 
         val metaLookupId = resolveMetaLookupId(itemId = id, itemType = type)
@@ -379,6 +422,7 @@ object MetaDetailsRepository {
         }
     }
 
+    private const val CLOUDSTREAM_DETAIL_TIMEOUT_MS = 120_000L
     private const val FETCH_TIMEOUT_MS = 5_000L
     private const val METADATA_PROVIDER_READY_TIMEOUT_MS = 10_000L
     private const val TMDB_ENRICH_TIMEOUT_MS = 5_000L
@@ -503,6 +547,36 @@ object MetaDetailsRepository {
             InAppLogger.info("Metadata/TMDB", "Standalone fallback loaded type=${result.type} id=${result.id} name=${result.name}")
         }
         return result
+    }
+
+    private suspend fun resolveExtensionEnrichedMeta(meta: MetaDetails): MetaDetails {
+        val tmdbSettings = TmdbSettingsRepository.snapshot()
+        if (!tmdbSettings.enabled) return meta
+
+        val cleaned = MediaTitleCleaner.clean(meta.name)
+        val query = cleaned.cleanTitle.ifBlank { meta.name }
+        val searchResult = runCatching {
+            TmdbService.ensureTmdbIdBySearch(
+                title = query,
+                mediaType = meta.type,
+                year = cleaned.year,
+            )
+        }.getOrNull() ?: return meta
+
+        val (tmdbId, imdbId) = searchResult
+        val metaWithImdb = meta.copy(imdbId = imdbId ?: meta.imdbId)
+
+        val tmdbEnriched = runCatching {
+            withTimeoutOrNull(TMDB_ENRICH_TIMEOUT_MS) {
+                TmdbMetadataService.enrichMeta(
+                    meta = metaWithImdb,
+                    fallbackItemId = tmdbId,
+                    settings = tmdbSettings,
+                )
+            }
+        }.getOrNull() ?: metaWithImdb
+
+        return tmdbEnriched
     }
 
     private suspend fun publishLoadedMeta(

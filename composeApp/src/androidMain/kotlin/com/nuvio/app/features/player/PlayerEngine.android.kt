@@ -335,6 +335,10 @@ private fun ExoPlayerSurface(
     val playbackDiagnostics = remember(playerSourceKey) { PlaybackDiagnostics() }
     var subtitleDelayMs by remember(playerSourceKey) { mutableStateOf(0) }
     var selectedExternalSubtitleMimeType by remember(playerSourceKey) { mutableStateOf<String?>(null) }
+    val seekPreviewExtractor = remember(playerSourceKey) {
+        AndroidSeekPreviewFrameExtractor(sourceUrl, sanitizedSourceHeaders)
+    }
+    var seekPreviewJob by remember(playerSourceKey) { mutableStateOf<Job?>(null) }
     val latestSubtitleDelayMs = rememberUpdatedState(subtitleDelayMs)
     val latestExternalSubtitleMimeType = rememberUpdatedState(selectedExternalSubtitleMimeType)
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
@@ -592,7 +596,6 @@ private fun ExoPlayerSurface(
 
     LaunchedEffect(exoPlayer, playerSourceKey) {
         if (chaptersProbeDone || useYoutubeChunkedPlayback) return@LaunchedEffect
-        if (!PlayerSettingsRepository.uiState.value.androidExoChaptersEnabled) return@LaunchedEffect
         if (!isProgressivePlaybackSource(sourceUrl, sanitizedSourceResponseHeaders, normalizedStreamType)) {
             return@LaunchedEffect
         }
@@ -622,6 +625,13 @@ private fun ExoPlayerSurface(
 
     DisposableEffect(nowPlayingController) {
         onDispose { nowPlayingController.release() }
+    }
+
+    DisposableEffect(exoPlayer) {
+        val cleanupAudioBoost = PlayerAudioBoostBridge.attachExoPlayer(exoPlayer)
+        onDispose {
+            cleanupAudioBoost()
+        }
     }
 
     LaunchedEffect(exoPlayer, resolvedMediaItem, initialPositionRequestKey) {
@@ -991,7 +1001,8 @@ private fun ExoPlayerSurface(
                 "release positionMs=${exoPlayer.currentPosition.coerceAtLeast(0L)} durationMs=${exoPlayer.duration.coerceAtLeast(0L)}",
             )
             playerViewRef?.releaseLibassOverlay()
-            exoPlayer.release()
+            seekPreviewJob?.cancel()
+            exoPlayer.releaseWithAssSupportCompat()
         }
     }
 
@@ -1030,10 +1041,6 @@ private fun ExoPlayerSurface(
                     exoPlayer.play()
                 }
 
-                // Fork: ExoPlayer chapters come from PlayerChapterReader (MKV + MP4) through the
-                // playback snapshot, gated by the upstream "Show Chapters" toggle; see the probe
-                // in ExoPlayerSurface. Upstream's MatroskaChapterLoader is not used.
-
                 override fun pause() {
                     InAppLogger.debug("ExoPlayer/Android", "control pause positionMs=${exoPlayer.currentPosition.coerceAtLeast(0L)}")
                     exoPlayer.pause()
@@ -1053,6 +1060,22 @@ private fun ExoPlayerSurface(
                     val targetMs = (currentMs + offsetMs).coerceAtLeast(0L)
                     InAppLogger.info("ExoPlayer/Android", "control seekBy offsetMs=$offsetMs fromMs=$currentMs targetMs=$targetMs")
                     exoPlayer.seekTo(targetMs)
+                }
+
+                override fun requestSeekPreviewFrame(
+                    positionMs: Long,
+                    onResult: (PlayerSeekPreview?) -> Unit,
+                ) {
+                    seekPreviewJob?.cancel()
+                    seekPreviewJob = coroutineScope.launch {
+                        delay(90L)
+                        val preview = withContext(Dispatchers.IO) {
+                            seekPreviewExtractor.extract(positionMs)
+                        }
+                        if (isActive) {
+                            onResult(preview)
+                        }
+                    }
                 }
 
                 override fun retry() {
@@ -1204,6 +1227,50 @@ private fun ExoPlayerSurface(
                         }
                         return
                     }
+                    val attachViaMediaItem: (String) -> Unit = { targetUrl ->
+                        subtitleSelectionJob = coroutineScope.launch {
+                            val currentPosition = exoPlayer.currentPosition
+                            val wasPlaying = exoPlayer.isPlaying
+                            val currentMediaItem = exoPlayer.currentMediaItem ?: run {
+                                Log.e(TAG, "setSubtitleUri: currentMediaItem is null, aborting")
+                                InAppLogger.warn("ExoPlayer/Android", "set external subtitle aborted: currentMediaItem is null")
+                                return@launch
+                            }
+                            preserveAudioSelectionForReload("setSubtitleUri")
+                            val resolvedMime = PlayerSubtitleUtils.mimeTypeFromUrl(targetUrl)
+                            selectedExternalSubtitleMimeType = resolvedMime
+                            InAppLogger.info(
+                                "ExoPlayer/Android",
+                                "external subtitle resolved mime=$resolvedMime positionMs=$currentPosition wasPlaying=$wasPlaying",
+                            )
+                            Log.d(TAG, "setSubtitleUri: currentPosition=$currentPosition, wasPlaying=$wasPlaying")
+                            val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(Uri.parse(targetUrl))
+                                .setMimeType(resolvedMime)
+                                .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+                                .setRoleFlags(C.ROLE_FLAG_SUBTITLE)
+                                .build()
+                            Log.d(
+                                TAG,
+                                "setSubtitleUri: subtitleConfig built, uri=${subtitleConfig.uri}, mime=${subtitleConfig.mimeType}, selectionFlags=${subtitleConfig.selectionFlags}"
+                            )
+                            val newMediaItem = currentMediaItem.buildUpon()
+                                .setSubtitleConfigurations(listOf(subtitleConfig))
+                                .build()
+                            Log.d(TAG, "setSubtitleUri: newMediaItem subtitleConfigs count=${newMediaItem.localConfiguration?.subtitleConfigurations?.size}")
+                            exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                                .buildUpon()
+                                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                                .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                                .setPreferredTextRoleFlags(C.ROLE_FLAG_SUBTITLE)
+                                .build()
+                            Log.d(TAG, "setSubtitleUri: track params set before prepare, textDisabled=${exoPlayer.trackSelectionParameters.disabledTrackTypes.contains(C.TRACK_TYPE_TEXT)}")
+                            exoPlayer.setPlaybackMediaItem(newMediaItem, currentPosition)
+                            exoPlayer.prepare()
+                            exoPlayer.playWhenReady = wasPlaying
+                            Log.d(TAG, "setSubtitleUri: prepare() called, waiting for STATE_READY")
+                        }
+                    }
+
                     if (sidecarController.canAttachAddonSubtitleViaSidecar(url, useLibass)) {
                         Log.d(TAG, "setSubtitleUri: using buffer-preserving sidecar for url=${url.redactedForLogs()}")
                         val headers = externalSubtitles.firstOrNull { it.url == url }?.headers.orEmpty()
@@ -1211,6 +1278,10 @@ private fun ExoPlayerSurface(
                             url = url,
                             headers = headers,
                             useLibass = useLibass,
+                            onFailure = {
+                                Log.w(TAG, "Sidecar subtitle failed; falling back to ExoPlayer media reload for url=${url.redactedForLogs()}")
+                                attachViaMediaItem(url)
+                            },
                         )
                         if (attached) {
                             exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
@@ -1220,47 +1291,7 @@ private fun ExoPlayerSurface(
                             return
                         }
                     }
-                    subtitleSelectionJob = coroutineScope.launch {
-                        val currentPosition = exoPlayer.currentPosition
-                        val wasPlaying = exoPlayer.isPlaying
-                        val currentMediaItem = exoPlayer.currentMediaItem ?: run {
-                            Log.e(TAG, "setSubtitleUri: currentMediaItem is null, aborting")
-                            InAppLogger.warn("ExoPlayer/Android", "set external subtitle aborted: currentMediaItem is null")
-                            return@launch
-                        }
-                        preserveAudioSelectionForReload("setSubtitleUri")
-                        val resolvedMime = PlayerSubtitleUtils.mimeTypeFromUrl(url)
-                        selectedExternalSubtitleMimeType = resolvedMime
-                        InAppLogger.info(
-                            "ExoPlayer/Android",
-                            "external subtitle resolved mime=$resolvedMime positionMs=$currentPosition wasPlaying=$wasPlaying",
-                        )
-                        Log.d(TAG, "setSubtitleUri: currentPosition=$currentPosition, wasPlaying=$wasPlaying")
-                        val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(Uri.parse(url))
-                            .setMimeType(resolvedMime)
-                            .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
-                            .setRoleFlags(C.ROLE_FLAG_SUBTITLE)
-                            .build()
-                        Log.d(
-                            TAG,
-                            "setSubtitleUri: subtitleConfig built, uri=${subtitleConfig.uri}, mime=${subtitleConfig.mimeType}, selectionFlags=${subtitleConfig.selectionFlags}"
-                        )
-                        val newMediaItem = currentMediaItem.buildUpon()
-                            .setSubtitleConfigurations(listOf(subtitleConfig))
-                            .build()
-                        Log.d(TAG, "setSubtitleUri: newMediaItem subtitleConfigs count=${newMediaItem.localConfiguration?.subtitleConfigurations?.size}")
-                        exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
-                            .buildUpon()
-                            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                            .clearOverridesOfType(C.TRACK_TYPE_TEXT)
-                            .setPreferredTextRoleFlags(C.ROLE_FLAG_SUBTITLE)
-                            .build()
-                        Log.d(TAG, "setSubtitleUri: track params set before prepare, textDisabled=${exoPlayer.trackSelectionParameters.disabledTrackTypes.contains(C.TRACK_TYPE_TEXT)}")
-                        exoPlayer.setPlaybackMediaItem(newMediaItem, currentPosition)
-                        exoPlayer.prepare()
-                        exoPlayer.playWhenReady = wasPlaying
-                        Log.d(TAG, "setSubtitleUri: prepare() called, waiting for STATE_READY")
-                    }
+                    attachViaMediaItem(url)
                 }
 
                 override fun clearExternalSubtitle() {
@@ -1442,6 +1473,10 @@ private fun LibmpvPlayerSurface(
     val sanitizedSourceHeaders = remember(sourceHeaders) {
         sanitizePlaybackHeaders(sourceHeaders)
     }
+    val seekPreviewExtractor = remember(sourceUrl, sanitizedSourceHeaders) {
+        AndroidSeekPreviewFrameExtractor(sourceUrl, sanitizedSourceHeaders)
+    }
+    var seekPreviewJob by remember(sourceUrl, sanitizedSourceHeaders) { mutableStateOf<Job?>(null) }
     val autoSyncCoordinator = rememberLibmpvAutoSyncCoordinator( // AutoSync hook
         scope = coroutineScope,
         sourceUrl = sourceUrl,
@@ -1466,6 +1501,16 @@ private fun LibmpvPlayerSurface(
 
     DisposableEffect(nowPlayingController) {
         onDispose { nowPlayingController?.release() }
+    }
+
+    DisposableEffect(playerViewRef) {
+        val view = playerViewRef ?: return@DisposableEffect onDispose {}
+        val cleanupAudioBoost = PlayerAudioBoostBridge.attachLibmpv { volumeDouble ->
+            view.setBoostVolume(volumeDouble)
+        }
+        onDispose {
+            cleanupAudioBoost()
+        }
     }
 
     val audioFocus = remember(context) {
@@ -1496,6 +1541,7 @@ private fun LibmpvPlayerSurface(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            seekPreviewJob?.cancel()
         }
     }
 
@@ -1674,11 +1720,28 @@ private fun LibmpvPlayerSurface(
 
     LaunchedEffect(playerViewRef, sourceUrl, sourceAudioUrl, sanitizedSourceHeaders, externalSubtitles) {
         val view = playerViewRef ?: return@LaunchedEffect
+        val wrappedController = autoSyncCoordinator.wrap( // AutoSync hook
+            view.controller(context, nowPlayingController),
+            view::replaceExternalSubtitle,
+        )
         onControllerReady(
-            autoSyncCoordinator.wrap( // AutoSync hook
-                view.controller(context, nowPlayingController),
-                view::replaceExternalSubtitle,
-            ),
+            object : PlayerEngineController by wrappedController {
+                override fun requestSeekPreviewFrame(
+                    positionMs: Long,
+                    onResult: (PlayerSeekPreview?) -> Unit,
+                ) {
+                    seekPreviewJob?.cancel()
+                    seekPreviewJob = coroutineScope.launch {
+                        delay(90L)
+                        val preview = withContext(Dispatchers.IO) {
+                            seekPreviewExtractor.extract(positionMs)
+                        }
+                        if (isActive) {
+                            onResult(preview)
+                        }
+                    }
+                }
+            },
         )
     }
 
@@ -1781,6 +1844,7 @@ private class NuvioLibmpvView(
         mpv.setPropertyBoolean("keep-open", true)
         mpv.setPropertyBoolean("input-default-bindings", true)
         mpv.setPropertyBoolean("audio-fallback-to-null", true)
+        mpv.setOptionString("volume-max", "200")
     }
 
     override fun postInitOptions() = Unit
@@ -1868,28 +1932,16 @@ private class NuvioLibmpvView(
         executeMpv { setPausedNow(paused) }
     }
 
+    fun setBoostVolume(volumePercent: Double) {
+        executeMpv {
+            mpv.setPropertyDouble("volume", volumePercent)
+        }
+    }
+
     fun seekToMs(positionMs: Long) {
         executeMpv {
             mpv.command("seek", (positionMs.coerceAtLeast(0L) / 1000.0).toString(), "absolute")
         }
-    }
-
-    /** mpv lists the chapters of the loaded file itself. */
-    suspend fun readChapters(): List<PlayerChapter> {
-        if (released.get()) return emptyList()
-        return runCatching {
-            withContext(mpvDispatcher) {
-                if (released.get()) return@withContext emptyList()
-                val count = mpv.getPropertyInt("chapter-list/count") ?: 0
-                (0 until count).mapNotNull { i ->
-                    val seconds = mpv.getPropertyDouble("chapter-list/$i/time") ?: return@mapNotNull null
-                    PlayerChapter(
-                        startMs = (seconds * 1000.0).toLong(),
-                        title = mpv.getPropertyString("chapter-list/$i/title")?.trim()?.takeIf { it.isNotBlank() },
-                    )
-                }
-            }
-        }.getOrDefault(emptyList())
     }
 
     suspend fun snapshot(): PlayerPlaybackSnapshot {
@@ -2176,8 +2228,6 @@ private class NuvioLibmpvView(
                 InAppLogger.info("MPV/Android", "control seekBy offsetMs=$offsetMs")
                 this@NuvioLibmpvView.seekByMs(offsetMs)
             }
-
-            override suspend fun getChapters(): List<PlayerChapter> = this@NuvioLibmpvView.readChapters()
 
             override fun retry() {
                 InAppLogger.info("MPV/Android", "control retry url=${InAppLogger.redactUrl(currentSourceUrl)}")

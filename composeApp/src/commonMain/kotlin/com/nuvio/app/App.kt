@@ -1,6 +1,7 @@
 package com.nuvio.app
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
@@ -97,9 +98,22 @@ internal fun AppEnvironment(content: @Composable () -> Unit) {
         ThemeSettingsRepository.amoledEnabled
     }.collectAsStateWithLifecycle()
 
-    val customThemeColors by ThemeSettingsRepository.customThemeColors.collectAsStateWithLifecycle()
+    val customThemeFirstColor by remember { ThemeSettingsRepository.customThemeFirstColor }
+        .collectAsStateWithLifecycle()
+    val customThemeSecondColor by remember { ThemeSettingsRepository.customThemeSecondColor }
+        .collectAsStateWithLifecycle()
+    val enhancedSettings by com.nuvio.app.features.settings.NuvioEnhancedSettingsRepository.uiState.collectAsStateWithLifecycle()
 
-    NuvioTheme(appTheme = selectedTheme, amoled = amoledEnabled, customThemeColors = customThemeColors) {
+    LaunchedEffect(enhancedSettings.statusBarVisible) {
+        com.nuvio.app.core.ui.AppSystemUiController.setStatusBarVisible(enhancedSettings.statusBarVisible)
+    }
+
+    NuvioTheme(
+        appTheme = selectedTheme,
+        customFirst = customThemeFirstColor,
+        customSecond = customThemeSecondColor,
+        amoled = amoledEnabled,
+    ) {
         content()
     }
 }

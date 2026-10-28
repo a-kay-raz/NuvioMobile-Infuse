@@ -69,7 +69,7 @@ object ServerRepository {
         syncState = ServerSyncState()
         runCatching { ServerStorage.clear() }.onFailure { log.w(it) { "Unable to clear server storage" } }
         _uiState.value = ServersUiState(revision = _uiState.value.revision + 1)
-        ServerMatcher.shared.clear()
+        ServerMatcher.clear()
     }
 
     fun removeProfile(profileId: Int) {
@@ -272,7 +272,7 @@ object ServerRepository {
         synchronized(lock) { tokens.clear() }
         loadedProfileId = profileId
         syncState = readSyncState(profileId)
-        ServerMatcher.shared.clear()
+        ServerMatcher.clear()
         _uiState.value = ServersUiState(
             connections = readConnections(profileId),
             revision = _uiState.value.revision + 1,

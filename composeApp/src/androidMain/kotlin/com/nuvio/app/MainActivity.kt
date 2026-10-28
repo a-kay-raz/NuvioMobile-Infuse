@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.nuvio.app.core.auth.AuthStorage
+import com.nuvio.app.core.network.DnsOverHttpsSettingsStorage
 import com.nuvio.app.core.network.ServerConfigurationStorage
 import com.nuvio.app.core.diagnostics.SentryInitializer
 import com.nuvio.app.core.deeplink.handleAppUrl
@@ -31,16 +32,19 @@ import com.nuvio.app.features.collection.CollectionStorage
 import com.nuvio.app.features.debrid.DebridSettingsStorage
 import com.nuvio.app.features.discord.DiscordRpcStorage
 import com.nuvio.app.features.downloads.DownloadNetworkGuard
+import com.nuvio.app.features.downloads.DownloadsExternalFolderPlatform
 import com.nuvio.app.features.downloads.DownloadsLiveStatusPlatform
 import com.nuvio.app.features.downloads.DownloadsPlatformDownloader
 import com.nuvio.app.features.downloads.DownloadsSettingsStorage
 import com.nuvio.app.features.downloads.DownloadsStorage
+import com.nuvio.app.features.livetv.LiveTvStorage
+import com.nuvio.app.features.settings.NuvioEnhancedBackupFileBridge
 import com.nuvio.app.features.library.LibraryDisplaySettingsStorage
 import com.nuvio.app.features.library.LibraryReleaseScheduleStorage
 import com.nuvio.app.features.membership.MemberAssetStorage
 import com.nuvio.app.features.library.LibraryStorage
 import com.nuvio.app.core.storage.AppFileCache
-import com.nuvio.app.features.livetv.LiveTvStorage
+import com.nuvio.app.features.details.FavoritePeopleStorage
 import com.nuvio.app.features.details.MetaScreenSettingsStorage
 import com.nuvio.app.features.details.OmdbEpisodeRatingsStorage
 import com.nuvio.app.features.details.OmdbSettingsStorage
@@ -64,11 +68,13 @@ import com.nuvio.app.features.profiles.ProfilePinCacheStorage
 import com.nuvio.app.features.profiles.ProfileStorage
 import com.nuvio.app.features.search.DiscoverSelectionStorage
 import com.nuvio.app.features.search.SearchHistoryStorage
+import com.nuvio.app.core.ui.AppSystemUiController
 import com.nuvio.app.features.servers.ServerStorage
 import com.nuvio.app.features.settings.ProfileTitleFactsStorage
 import com.nuvio.app.features.settings.SentrySettingsStorage
 import com.nuvio.app.features.settings.AppIconPlatform
 import com.nuvio.app.features.settings.ThemeSettingsStorage
+import com.nuvio.app.features.settings.NuvioEnhancedSettingsStorage
 import com.nuvio.app.features.trakt.TraktAuthStorage
 import com.nuvio.app.features.trakt.TraktCommentsStorage
 import com.nuvio.app.features.trakt.TraktLibraryStorage
@@ -79,8 +85,6 @@ import com.nuvio.app.features.anilist.PlatformAniListAuthPersistence
 import com.nuvio.app.features.anilist.PlatformAniListSyncStorage
 import com.nuvio.app.features.wetrakr.PlatformWeTrakrAuthPersistence
 import com.nuvio.app.features.wetrakr.PlatformWeTrakrSyncStorage
-import com.nuvio.app.features.publicmetadb.PlatformPublicMetaDbAuthPersistence
-import com.nuvio.app.features.publicmetadb.PlatformPublicMetaDbSyncStorage
 import com.nuvio.app.features.simkl.SimklAuthStorage
 import com.nuvio.app.features.simkl.SimklSyncStorage
 import com.nuvio.app.features.tmdb.TmdbSettingsStorage
@@ -88,6 +92,7 @@ import com.nuvio.app.features.updater.AndroidAppUpdaterPlatform
 import com.nuvio.app.features.watched.WatchedStorage
 import com.nuvio.app.features.streams.StreamLinkCacheStorage
 import com.nuvio.app.features.streams.StreamBadgeSettingsStorage
+import com.nuvio.app.features.streams.StreamSourcePreferencesStorage
 import com.nuvio.app.features.streams.BingeGroupCacheStorage
 import com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentStorage
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesStorage
@@ -111,7 +116,9 @@ open class MainActivity : AppCompatActivity() {
                 scrim = 0xFF020404.toInt(),
             ),
         )
+        AppSystemUiController.bind(this)
         ThemeSettingsStorage.initialize(applicationContext)
+        NuvioEnhancedSettingsStorage.initialize(applicationContext)
         AppIconPlatform.initialize(applicationContext)
         SentrySettingsStorage.initialize(applicationContext)
         SentryInitializer.start(application)
@@ -122,6 +129,8 @@ open class MainActivity : AppCompatActivity() {
         SyncClientIdentityStorage.initialize(applicationContext)
         AddonHttpClientProvider.initialize(applicationContext)
         AddonStorage.initialize(applicationContext)
+        com.nuvio.app.features.cloudstream.CloudStreamPlatformStorage.initialize(this)
+        com.nuvio.app.features.cloudstream.CloudStreamPlatformRuntime.initialize(applicationContext)
         AuthStorage.initialize(applicationContext)
         ServerConfigurationStorage.initialize(applicationContext)
         LibraryStorage.initialize(applicationContext)
@@ -159,6 +168,7 @@ open class MainActivity : AppCompatActivity() {
         TraktCommentsStorage.initialize(applicationContext)
         TraktLibraryStorage.initialize(applicationContext)
         TraktSettingsStorage.initialize(applicationContext)
+        FavoritePeopleStorage.initialize(applicationContext)
         PlatformMdbListAuthPersistence.initialize(applicationContext)
         ServerStorage.initialize(applicationContext)
         PlatformMdbListSyncStorage.initialize(applicationContext)
@@ -166,8 +176,6 @@ open class MainActivity : AppCompatActivity() {
         PlatformAniListSyncStorage.initialize(applicationContext)
         PlatformWeTrakrAuthPersistence.initialize(applicationContext)
         PlatformWeTrakrSyncStorage.initialize(applicationContext)
-        PlatformPublicMetaDbAuthPersistence.initialize(applicationContext)
-        PlatformPublicMetaDbSyncStorage.initialize(applicationContext)
         DiscordRpcStorage.initialize(applicationContext)
         SimklAuthStorage.initialize(applicationContext)
         SimklSyncStorage.initialize(applicationContext)
@@ -180,6 +188,7 @@ open class MainActivity : AppCompatActivity() {
         WatchProgressStorage.initialize(applicationContext)
         StreamLinkCacheStorage.initialize(applicationContext)
         StreamBadgeSettingsStorage.initialize(applicationContext)
+        StreamSourcePreferencesStorage.initialize(applicationContext)
         BingeGroupCacheStorage.initialize(applicationContext)
         ProfileTitleFactsStorage.initialize(applicationContext)
         PluginStorage.initialize(applicationContext)
@@ -190,6 +199,11 @@ open class MainActivity : AppCompatActivity() {
         DownloadsLiveStatusPlatform.initialize(applicationContext)
         DownloadsSettingsStorage.initialize(applicationContext)
         DownloadNetworkGuard.initialize(applicationContext)
+        DownloadsExternalFolderPlatform.initialize(applicationContext)
+        DownloadsExternalFolderPlatform.bindActivity(this)
+        NuvioEnhancedBackupFileBridge.bindActivity(this)
+        LiveTvStorage.initialize(applicationContext)
+        DnsOverHttpsSettingsStorage.initialize(applicationContext)
         AndroidAppUpdaterPlatform.initialize(applicationContext)
         PlatformLocalAccountDataCleaner.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.initialize(applicationContext)
@@ -238,8 +252,22 @@ open class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         startupScope.cancel()
+        AppSystemUiController.unbind(this)
         EpisodeReleaseNotificationPlatform.unbindActivity(this)
+        DownloadsExternalFolderPlatform.unbindActivity(this)
+        NuvioEnhancedBackupFileBridge.unbindActivity(this)
         super.onDestroy()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (NuvioEnhancedBackupFileBridge.handleActivityResult(requestCode, resultCode, data)) {
+            return
+        }
+        if (DownloadsExternalFolderPlatform.handleActivityResult(requestCode, resultCode, data)) {
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onRequestPermissionsResult(

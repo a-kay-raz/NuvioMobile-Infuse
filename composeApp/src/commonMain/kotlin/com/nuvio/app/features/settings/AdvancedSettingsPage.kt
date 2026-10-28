@@ -53,10 +53,7 @@ import nuvio.composeapp.generated.resources.settings_advanced_remember_last_prof
 import nuvio.composeapp.generated.resources.settings_advanced_remember_last_profile_description
 import nuvio.composeapp.generated.resources.settings_advanced_section_cache
 import nuvio.composeapp.generated.resources.settings_advanced_section_debugging
-import nuvio.composeapp.generated.resources.settings_advanced_section_diagnostics
 import nuvio.composeapp.generated.resources.settings_advanced_section_startup
-import nuvio.composeapp.generated.resources.settings_advanced_sentry_reports
-import nuvio.composeapp.generated.resources.settings_advanced_sentry_reports_subtitle
 import nuvio.composeapp.generated.resources.sentry_disable_dialog_subtitle
 import nuvio.composeapp.generated.resources.sentry_disable_dialog_title
 import nuvio.composeapp.generated.resources.sentry_enable_dialog_subtitle
@@ -121,43 +118,6 @@ internal fun LazyListScope.advancedSettingsContent(
                         showDnsDialog = false
                     },
                     onDismiss = { showDnsDialog = false },
-                )
-            }
-        }
-    }
-    if (SentrySettingsRepository.isSupported) {
-        item {
-            val sentryEnabledFlow = remember {
-                SentrySettingsRepository.ensureLoaded()
-                SentrySettingsRepository.enabled
-            }
-            val sentryEnabled by sentryEnabledFlow.collectAsStateWithLifecycle()
-            var showSentryDialog by rememberSaveable { mutableStateOf(false) }
-
-            SettingsSection(
-                title = stringResource(Res.string.settings_advanced_section_diagnostics),
-                isTablet = isTablet,
-            ) {
-                SettingsGroup(isTablet = isTablet) {
-                    SettingsSwitchRow(
-                        title = stringResource(Res.string.settings_advanced_sentry_reports),
-                        description = stringResource(Res.string.settings_advanced_sentry_reports_subtitle),
-                        checked = sentryEnabled,
-                        isTablet = isTablet,
-                        onCheckedChange = { showSentryDialog = true },
-                    )
-                }
-            }
-
-            if (showSentryDialog) {
-                SentrySettingsDialog(
-                    enabled = sentryEnabled,
-                    onConfirm = {
-                        SentrySettingsRepository.setEnabled(!sentryEnabled)
-                    },
-                    onDismiss = {
-                        showSentryDialog = false
-                    },
                 )
             }
         }

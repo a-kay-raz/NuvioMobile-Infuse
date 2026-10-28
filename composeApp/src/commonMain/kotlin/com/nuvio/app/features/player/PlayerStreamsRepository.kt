@@ -32,6 +32,13 @@ import com.nuvio.app.features.streams.supportsStream
 import com.nuvio.app.features.streams.toEmptyStateReason
 import com.nuvio.app.features.streams.toPluginProviderGroups
 import com.nuvio.app.features.streams.toStreamItem
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
+import com.nuvio.app.features.cloudstream.parseCloudStreamRouteId
+import com.nuvio.app.features.streams.buildCloudStreamSearchRequest
+import com.nuvio.app.features.streams.cloudStreamProviderGroupsForRequest
+import com.nuvio.app.features.streams.resolveCloudStreamProviderStreams
+import com.nuvio.app.features.streams.cloudStreamSourcesToStreamItems
+import com.nuvio.app.features.streams.StreamsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,6 +49,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeoutOrNull
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
@@ -52,6 +62,9 @@ import org.jetbrains.compose.resources.getString
 object PlayerStreamsRepository {
     private val log = Logger.withTag("PlayerStreamsRepo")
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    private val cloudStreamSemaphore = Semaphore(4)
+    private const val PLAYER_STREAM_PROVIDER_TIMEOUT_MS = 35_000L
 
     // source panel
     private val _sourceState = MutableStateFlow(StreamsUiState())
@@ -68,15 +81,21 @@ object PlayerStreamsRepository {
     fun loadSources(
         type: String,
         videoId: String,
+        parentMetaId: String? = null,
+        parentMetaType: String? = null,
         season: Int? = null,
         episode: Int? = null,
+        searchTitle: String? = null,
         forceRefresh: Boolean = false,
     ) {
         fetchStreams(
             type = type,
             videoId = videoId,
+            parentMetaId = parentMetaId,
+            parentMetaType = parentMetaType,
             season = season,
             episode = episode,
+            searchTitle = searchTitle,
             forceRefresh = forceRefresh,
             stateFlow = _sourceState,
             requestKeyHolder = { sourceRequestKey },
@@ -89,15 +108,21 @@ object PlayerStreamsRepository {
     fun loadEpisodeStreams(
         type: String,
         videoId: String,
+        parentMetaId: String? = null,
+        parentMetaType: String? = null,
         season: Int? = null,
         episode: Int? = null,
+        searchTitle: String? = null,
         forceRefresh: Boolean = false,
     ) {
         fetchStreams(
             type = type,
             videoId = videoId,
+            parentMetaId = parentMetaId,
+            parentMetaType = parentMetaType,
             season = season,
             episode = episode,
+            searchTitle = searchTitle,
             forceRefresh = forceRefresh,
             stateFlow = _episodeStreamsState,
             requestKeyHolder = { episodeStreamsRequestKey },
@@ -180,8 +205,11 @@ object PlayerStreamsRepository {
     private fun fetchStreams(
         type: String,
         videoId: String,
+        parentMetaId: String? = null,
+        parentMetaType: String? = null,
         season: Int?,
         episode: Int?,
+        searchTitle: String? = null,
         forceRefresh: Boolean,
         stateFlow: MutableStateFlow<StreamsUiState>,
         requestKeyHolder: () -> String?,
@@ -195,7 +223,21 @@ object PlayerStreamsRepository {
         } else {
             PluginsUiState(pluginsEnabled = false)
         }
-        val requestKey = "$type::$videoId::$season::$episode::pluginsGrouped=${pluginUiState.groupStreamsByRepository}"
+        val cloudStreamSearchRequest = buildCloudStreamSearchRequest(
+            type = type,
+            videoId = videoId,
+            parentMetaId = parentMetaId,
+            parentMetaType = parentMetaType,
+            season = season,
+            episode = episode,
+            searchTitle = searchTitle,
+        )
+        val cloudStreamProviderGroups = if (AppFeaturePolicy.pluginsEnabled) {
+            cloudStreamProviderGroupsForRequest(type, cloudStreamSearchRequest)
+        } else {
+            emptyList()
+        }
+        val requestKey = "$type::$videoId::$season::$episode::pluginsGrouped=${pluginUiState.groupStreamsByRepository}::cloudTarget=${cloudStreamSearchRequest?.cacheKey.orEmpty()}"
         PluginRepository.setLocalPluginSearchPaused(false)
         val current = stateFlow.value
         val cachedKey = requestKeyHolder()
@@ -239,6 +281,85 @@ object PlayerStreamsRepository {
             return
         }
 
+        val cloudStreamRoute = parseCloudStreamRouteId(videoId)
+            ?: parentMetaId?.takeIf { type == "movie" }?.let { parseCloudStreamRouteId(it) }
+        if (cloudStreamRoute != null) {
+            CloudStreamRepository.initialize()
+            val providerItem = CloudStreamRepository.uiState.value.plugins
+                .firstOrNull { it.metadata.id.value == cloudStreamRoute.providerId }
+            val providerName = providerItem?.metadata?.name ?: "CloudStream"
+            val providerAddonId = "cloudstream:${cloudStreamRoute.providerId}"
+            stateFlow.value = StreamsUiState(
+                groups = listOf(
+                    AddonStreamGroup(
+                        addonName = providerName,
+                        addonId = providerAddonId,
+                        streams = emptyList(),
+                        isLoading = true,
+                    ),
+                ),
+                activeAddonIds = setOf(providerAddonId),
+                isAnyLoading = true,
+            )
+            val job = scope.launch {
+                val result = runCatching {
+                    withTimeoutOrNull(PLAYER_STREAM_PROVIDER_TIMEOUT_MS) {
+                        CloudStreamRepository.loadLinks(cloudStreamRoute.providerId, cloudStreamRoute.data)
+                    } ?: error("$providerName timed out")
+                }.fold(
+                    onSuccess = { it },
+                    onFailure = { Result.failure(it) },
+                )
+                if (requestKeyHolder() != requestKey) return@launch
+                result.fold(
+                    onSuccess = { sources ->
+                        val streams = cloudStreamSourcesToStreamItems(
+                            providerId = cloudStreamRoute.providerId,
+                            providerName = providerName,
+                            sources = sources,
+                        )
+                        val presentedGroup = StreamBadgePresentation.apply(
+                            groups = listOf(
+                                AddonStreamGroup(
+                                    addonName = providerName,
+                                    addonId = providerAddonId,
+                                    streams = streams,
+                                    isLoading = false,
+                                    error = if (streams.isEmpty()) "No links found" else null,
+                                ),
+                            ),
+                            rules = streamBadgeRules,
+                        )
+                        stateFlow.value = StreamsUiState(
+                            groups = presentedGroup,
+                            activeAddonIds = setOf(providerAddonId),
+                            isAnyLoading = false,
+                            emptyStateReason = if (streams.isEmpty()) com.nuvio.app.features.streams.StreamsEmptyStateReason.NoStreamsFound else null,
+                        )
+                    },
+                    onFailure = { error ->
+                        log.w(error) { "CloudStream link resolution failed provider=${cloudStreamRoute.providerId}" }
+                        stateFlow.value = StreamsUiState(
+                            groups = listOf(
+                                AddonStreamGroup(
+                                    addonName = providerName,
+                                    addonId = providerAddonId,
+                                    streams = emptyList(),
+                                    isLoading = false,
+                                    error = error.message ?: "CloudStream link resolution failed",
+                                ),
+                            ),
+                            activeAddonIds = setOf(providerAddonId),
+                            isAnyLoading = false,
+                            emptyStateReason = com.nuvio.app.features.streams.StreamsEmptyStateReason.StreamFetchFailed,
+                        )
+                    },
+                )
+            }
+            setJob(job)
+            return
+        }
+
         val isNativeServerRequest = ServerStreams.isNativeRequest(videoId)
         val serverSources = ServerStreams.sources(type, videoId, season, episode, forceRefresh)
         val preferredGroupIds = serverSources.filter { it.preferred }.mapTo(mutableSetOf()) { it.addonId }
@@ -256,8 +377,8 @@ object PlayerStreamsRepository {
             groupByRepository = pluginUiState.groupStreamsByRepository,
         )
 
-        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty()) {
-            InAppLogger.warn("Streams/PlayerStreamsRepository", "No stream addons or plugin scrapers installed for type=$type id=$videoId")
+        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty() && cloudStreamProviderGroups.isEmpty()) {
+            InAppLogger.warn("Streams/PlayerStreamsRepository", "No stream addons, plugin scrapers, or CloudStream providers installed for type=$type id=$videoId")
             stateFlow.value = StreamsUiState(
                 isAnyLoading = false,
                 emptyStateReason = com.nuvio.app.features.streams.StreamsEmptyStateReason.NoAddonsInstalled,
@@ -283,8 +404,8 @@ object PlayerStreamsRepository {
                 "for type=$type id=$videoId",
         )
 
-        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty()) {
-            InAppLogger.warn("Streams/PlayerStreamsRepository", "No compatible stream addon/plugin for type=$type id=$videoId")
+        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty() && cloudStreamProviderGroups.isEmpty()) {
+            InAppLogger.warn("Streams/PlayerStreamsRepository", "No compatible stream addon, plugin, or CloudStream provider for type=$type id=$videoId")
             stateFlow.value = StreamsUiState(
                 isAnyLoading = false,
                 emptyStateReason = com.nuvio.app.features.streams.StreamsEmptyStateReason.NoCompatibleAddons,
@@ -307,6 +428,13 @@ object PlayerStreamsRepository {
                 streams = emptyList(),
                 isLoading = true,
             )
+        } + cloudStreamProviderGroups.map { providerGroup ->
+            AddonStreamGroup(
+                addonName = providerGroup.addonName,
+                addonId = providerGroup.addonId,
+                streams = emptyList(),
+                isLoading = true,
+            )
         } + serverSources.map { it.loadingGroup() }, installedAddonOrder, preferredGroupIds)
         val isInitiallyLoading = initialGroups.any { it.isLoading }
         stateFlow.value = StreamsUiState(
@@ -322,7 +450,10 @@ object PlayerStreamsRepository {
                 .associate { it.addonId to it.scrapers.size }
                 .toMutableMap()
             val pluginFirstErrorByAddonId = mutableMapOf<String, String>()
-            val totalTasks = streamAddons.size + pluginProviderGroups.sumOf { it.scrapers.size } + serverSources.size
+            val totalTasks = streamAddons.size +
+                pluginProviderGroups.sumOf { it.scrapers.size } +
+                serverSources.size +
+                cloudStreamProviderGroups.size
             val completions = Channel<StreamLoadCompletion>(capacity = Channel.BUFFERED)
             val debridAvailabilityJobs = mutableListOf<Job>()
 
@@ -482,6 +613,25 @@ object PlayerStreamsRepository {
                         )
                         publishCompletion(completion)
                     }
+                }
+            }
+            cloudStreamProviderGroups.forEach { providerGroup ->
+                launch {
+                    val group = withTimeoutOrNull(PLAYER_STREAM_PROVIDER_TIMEOUT_MS) {
+                        cloudStreamSemaphore.withPermit {
+                            resolveCloudStreamProviderStreams(
+                                providerGroup = providerGroup,
+                                request = cloudStreamSearchRequest,
+                            )
+                        }
+                    } ?: AddonStreamGroup(
+                        addonName = providerGroup.addonName,
+                        addonId = providerGroup.addonId,
+                        streams = emptyList(),
+                        isLoading = false,
+                        error = "${providerGroup.addonName} timed out",
+                    )
+                    publishCompletion(StreamLoadCompletion.Addon(group))
                 }
             }
 

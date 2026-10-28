@@ -241,6 +241,7 @@ internal fun AppTabHost(
 
             AppScreenTab.LiveTv -> {
                 LiveTvScreen(
+                    modifier = Modifier.fillMaxSize(),
                     scrollToTopRequests = requests.liveTvScrollToTopRequests,
                     onChannelClick = actions.onLiveTvChannelClick,
                 )

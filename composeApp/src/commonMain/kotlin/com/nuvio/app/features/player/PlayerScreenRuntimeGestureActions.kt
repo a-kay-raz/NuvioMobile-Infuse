@@ -53,6 +53,7 @@ internal fun PlayerScreenRuntime.clearLiveGestureFeedback() {
 }
 
 internal fun PlayerScreenRuntime.revealLockedOverlay() {
+    controlsActivityTick += 1
     controlsVisible = false
     lockedOverlayVisible = true
 }
@@ -64,6 +65,7 @@ internal fun PlayerScreenRuntime.lockPlayerControls() {
     pausedOverlayVisible = false
     isScrubbingTimeline = false
     scrubbingPositionMs = null
+    seekPreview = null
     gestureMessageJob?.cancel()
     gestureFeedback = null
     liveGestureFeedback = null
@@ -147,7 +149,6 @@ internal fun PlayerScreenRuntime.showVolumeFeedback(level: PlayerAudioLevel) {
     notifyVolumeLevelForAutoSubtitle(level)
     val normalized = level.fraction.coerceIn(0f, PlayerMaxVolumeBoost)
     val percentage = (normalized * 100f).roundToInt()
-    val isBoosted = normalized > PlayerNormalVolumeCeiling
     showGestureFeedback(
         GestureFeedbackState(
             messageRes = if (level.isMuted) {
@@ -157,9 +158,8 @@ internal fun PlayerScreenRuntime.showVolumeFeedback(level: PlayerAudioLevel) {
             },
             messageArgs = if (level.isMuted) emptyList() else listOf("$percentage%"),
             icon = if (level.isMuted) GestureFeedbackIcon.VolumeMuted else GestureFeedbackIcon.Volume,
-            // Reuse the existing alternate feedback color path to distinguish boosted volume.
-            isDanger = level.isMuted || isBoosted,
-            level = if (level.isMuted) 0f else level.fraction.coerceIn(0f, 1f),
+            isDanger = level.isMuted,
+            level = if (level.isMuted) 0f else normalized,
         ),
     )
 }
@@ -322,12 +322,7 @@ internal fun PlayerScreenRuntime.pinchVideoZoom(zoomFactor: Float) {
     if (next == videoZoom) return
     videoZoom = next
     playerController?.setVideoZoom(next)
-    showGestureFeedback(
-        GestureFeedbackState(
-            message = "${(next * 100f).roundToInt()}%",
-            icon = GestureFeedbackIcon.VideoZoom,
-        ),
-    )
+    showGestureMessage("${(next * 100f).roundToInt()}%")
 }
 
 internal fun PlayerScreenRuntime.setPlaybackSpeedFromPicker(speed: Float) {

@@ -94,6 +94,11 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
+        fun prop(key: String, fallback: String = ""): String =
+            props.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() }
+                ?: System.getenv(key)?.trim()?.takeIf { it.isNotEmpty() }
+                ?: fallback
+
         outDir.resolve("com/nuvio/app/features/trakt").apply {
             mkdirs()
             resolve("TraktConfig.kt").writeText(
@@ -101,9 +106,9 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |package com.nuvio.app.features.trakt
                 |
                 |object TraktConfig {
-                |    const val CLIENT_ID = "${props.getProperty("TRAKT_CLIENT_ID", "")}" 
-                |    const val CLIENT_SECRET = "${props.getProperty("TRAKT_CLIENT_SECRET", "")}" 
-                |    const val REDIRECT_URI = "${props.getProperty("TRAKT_REDIRECT_URI", "nuvio://auth/trakt")}" 
+                |    const val CLIENT_ID = "${prop("TRAKT_CLIENT_ID", "4ab0ead6d5510bf39180a5e1dd7b452f5ad700b7794564befdd6bca56e0f7ce4")}" 
+                |    const val CLIENT_SECRET = "${prop("TRAKT_CLIENT_SECRET", "64d24f12e4628dcf0dda74a61f2235c086daaf8146384016b6a86c196e419c26")}" 
+                |    const val REDIRECT_URI = "${prop("TRAKT_REDIRECT_URI", "nuvio://auth/trakt")}" 
                 |}
                 """.trimMargin()
             )
@@ -116,9 +121,9 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |package com.nuvio.app.features.simkl
                 |
                 |object SimklConfig {
-                |    const val CLIENT_ID = "${props.getProperty("SIMKL_CLIENT_ID", "")}"
-                |    const val REDIRECT_URI = "${props.getProperty("SIMKL_REDIRECT_URI", "nuvio://auth/simkl")}"
-                |    const val APP_NAME = "${props.getProperty("SIMKL_APP_NAME", "nuvio")}"
+                |    const val CLIENT_ID = "${prop("SIMKL_CLIENT_ID", "966b70652bf3ebbe46556dde9aa5a88e903790ae448c30b9866584743a6fc39e")}"
+                |    const val REDIRECT_URI = "${prop("SIMKL_REDIRECT_URI", "nuvio://auth/simkl")}"
+                |    const val APP_NAME = "${prop("SIMKL_APP_NAME", "nuvio")}"
                 |}
                 """.trimMargin()
             )
@@ -131,7 +136,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |package com.nuvio.app.features.mdblist
                 |
                 |object MdbListConfig {
-                |    const val CLIENT_ID = "${props.getProperty("MDBLIST_CLIENT_ID", "")}"
+                |    const val CLIENT_ID = "${prop("MDBLIST_CLIENT_ID", "xOUwKUPdGEbHif6aKwW2gCxCAvFx7m0Q3jX0ZxXZ")}"
                 |}
                 """.trimMargin()
             )
@@ -144,7 +149,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |package com.nuvio.app.features.player.skip
                 |
                 |object IntroDbConfig {
-                |    const val URL = "${props.getProperty("INTRODB_API_URL", "")}" 
+                |    const val URL = "${prop("INTRODB_API_URL", "https://api.introdb.app/")}" 
                 |}
                 """.trimMargin()
             )
@@ -304,10 +309,17 @@ val runtimeLocalProperties = Properties().apply {
     }
 }
 
-fun runtimeConfigValue(key: String, fallback: String = ""): String =
-    runtimeLocalProperties.getProperty(key)?.trim()?.takeIf { it.isNotBlank() }
-        ?: providers.environmentVariable(key).orNull?.trim()?.takeIf { it.isNotBlank() }
+fun runtimeConfigValue(vararg keys: String, fallback: String = ""): String =
+    keys.asSequence()
+        .mapNotNull { key ->
+            runtimeLocalProperties.getProperty(key)?.trim()?.takeIf { it.isNotBlank() }
+                ?: providers.environmentVariable(key).orNull?.trim()?.takeIf { it.isNotBlank() }
+        }
+        .firstOrNull()
         ?: fallback
+
+val publicNuvioApiUrl = "https://api.nuvio.tv"
+val publicNuvioApiKey = "sb_publishable_1Clq8rlTVACkdcZuqr6_AD__xUUC_EN"
 
 fun runtimeConfigBoolean(key: String, default: Boolean): Boolean =
     when (runtimeConfigValue(key).lowercase()) {
@@ -321,8 +333,8 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     localPropertiesFile.set(rootProject.layout.projectDirectory.file("local.properties"))
     appVersionName.set(releaseAppVersionName)
     appVersionCode.set(releaseAppVersionCode)
-    supabaseUrl.set(runtimeConfigValue("NUVIO_SUPABASE_URL"))
-    supabaseAnonKey.set(runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY"))
+    supabaseUrl.set(runtimeConfigValue("NUVIO_SUPABASE_URL", "SUPABASE_URL", fallback = publicNuvioApiUrl))
+    supabaseAnonKey.set(runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY", fallback = publicNuvioApiKey))
     supabaseFallbackUrl.set(runtimeConfigValue("NUVIO_SUPABASE_FALLBACK_URL"))
     sentryDsn.set(runtimeConfigValue("SENTRY_DSN"))
     tmdbApiKey.set(runtimeConfigValue("TMDB_API_KEY"))
@@ -456,7 +468,9 @@ kotlin {
                 implementation(libs.coil.gif)
                 implementation("androidx.recyclerview:recyclerview:1.4.0")
                 implementation("com.squareup.okhttp3:okhttp:4.12.0")
+                implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0")
                 implementation("com.google.code.gson:gson:2.11.0")
+                implementation("org.tukaani:xz:1.10")
                 // libass - atlas-based subtitle rendering (from NuvioMedia/nuvio-libass)
                 implementation(files("libs/nuvio-libass-release.aar"))
                 implementation(libs.ktor.client.okhttp)
@@ -480,6 +494,22 @@ kotlin {
                 implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("lib-*.aar"))))
                 if (androidDistribution == "full") {
                     implementation(files("libs/quickjs-kt-android-1.0.5-nuvio.aar"))
+                    implementation(files("libs/cloudstream-runtime-api-4.8.0-3496e5f.aar"))
+                    implementation("androidx.annotation:annotation:1.10.0")
+                    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
+                    implementation("org.jsoup:jsoup:1.22.1")
+                    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
+                    implementation("com.github.Blatzar:NiceHttp:0.4.18")
+                    implementation(libs.conscrypt.android)
+                    implementation("me.xdrop:fuzzywuzzy:1.4.0")
+                    implementation("org.mozilla:rhino:1.8.1")
+                    implementation("com.uwetrottmann.tmdb2:tmdb-java:2.13.0")
+                    implementation("dev.whyoleg.cryptography:cryptography-core:0.6.0")
+                    implementation("dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0")
+                    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.3") {
+                        exclude(group = "org.mozilla", module = "rhino-engine")
+                    }
+                    implementation(kotlin("reflect"))
                     implementation(libs.ksoup)
                 }
             }

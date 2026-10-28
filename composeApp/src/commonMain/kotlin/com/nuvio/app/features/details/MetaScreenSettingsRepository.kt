@@ -55,6 +55,7 @@ data class MetaScreenSettingsUiState(
     val showOverallRatings: Boolean = true,
     val episodeRatingsVisibility: EpisodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL,
     val showRatingMap: Boolean = true,
+    val showDownloadAction: Boolean = false,
 )
 
 enum class MetaScreenBackgroundMode {
@@ -147,6 +148,8 @@ private data class StoredMetaScreenSettingsPayload(
     val episodeRatingsVisibility: String = EpisodeRatingsVisibility.SHOW_ALL.name,
     @SerialName("show_rating_map")
     val showRatingMap: Boolean = true,
+    @SerialName("show_download_action")
+    val showDownloadAction: Boolean = false,
 )
 
 private data class MetaScreenSectionDefinition(
@@ -236,6 +239,7 @@ object MetaScreenSettingsRepository {
     private var episodeRatingsVisibility: EpisodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL
     private var showRatingMap: Boolean = true
     private var posterTransitionEnabled: Boolean = false
+    private var showDownloadAction: Boolean = false
     private fun localizedString(resource: StringResource): String = runBlocking { getString(resource) }
 
     fun ensureLoaded() {
@@ -265,6 +269,7 @@ object MetaScreenSettingsRepository {
                 showOverallRatings = parsed.showOverallRatings
                 episodeRatingsVisibility = EpisodeRatingsVisibility.parse(parsed.episodeRatingsVisibility)
                 showRatingMap = parsed.showRatingMap
+                showDownloadAction = parsed.showDownloadAction
                 preferences = parsed.items.mapNotNull { item ->
                     val key = runCatching { MetaScreenSectionKey.valueOf(item.key) }.getOrNull() ?: return@mapNotNull null
                     key to item
@@ -292,8 +297,18 @@ object MetaScreenSettingsRepository {
         showOverallRatings = true
         episodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL
         showRatingMap = true
+        showDownloadAction = false
         _uiState.value = MetaScreenSettingsUiState()
         ensureLoaded()
+    }
+
+    fun setShowDownloadAction(enabled: Boolean) {
+        ensureLoaded()
+        if (showDownloadAction == enabled) return
+        showDownloadAction = enabled
+        publish()
+        persist()
+        com.nuvio.app.features.downloads.DownloadsSettingsRepository.setShowDownloadButton(enabled)
     }
 
     fun setCinematicBackground(enabled: Boolean) {
@@ -425,6 +440,7 @@ object MetaScreenSettingsRepository {
         showOverallRatings = true
         episodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL
         showRatingMap = true
+        showDownloadAction = false
         _uiState.value = MetaScreenSettingsUiState()
     }
 
@@ -443,6 +459,7 @@ object MetaScreenSettingsRepository {
         showOverallRatings: Boolean = true,
         episodeRatingsVisibility: EpisodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL,
         showRatingMap: Boolean = true,
+        showDownloadAction: Boolean = false,
     ) {
         ensureLoaded()
         this.backgroundMode = backgroundMode ?: MetaScreenBackgroundMode.fromLegacyCinematic(cinematicBackground)
@@ -460,6 +477,7 @@ object MetaScreenSettingsRepository {
         this.showOverallRatings = showOverallRatings
         this.episodeRatingsVisibility = episodeRatingsVisibility
         this.showRatingMap = showRatingMap
+        this.showDownloadAction = showDownloadAction
         preferences = items.associate { item ->
             item.key to StoredMetaScreenSectionPreference(
                 key = item.key.name,
@@ -494,6 +512,7 @@ object MetaScreenSettingsRepository {
         showOverallRatings = true
         episodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL
         showRatingMap = true
+        showDownloadAction = false
         normalizePreferences()
         publish()
         persist()
@@ -570,6 +589,7 @@ object MetaScreenSettingsRepository {
             showOverallRatings = showOverallRatings,
             episodeRatingsVisibility = episodeRatingsVisibility,
             showRatingMap = showRatingMap,
+            showDownloadAction = showDownloadAction,
         )
     }
 
@@ -591,6 +611,7 @@ object MetaScreenSettingsRepository {
                     showOverallRatings = showOverallRatings,
                     episodeRatingsVisibility = episodeRatingsVisibility.name,
                     showRatingMap = showRatingMap,
+                    showDownloadAction = showDownloadAction,
                 ),
             ),
         )

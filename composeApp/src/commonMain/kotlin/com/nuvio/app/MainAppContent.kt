@@ -91,7 +91,10 @@ import com.nuvio.app.features.addons.AddAddonResult
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.isWaitingForFirstEnabledManifest
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.catalog.CatalogTarget
+import com.nuvio.app.features.livetv.LiveTvChannel
+import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.cloud.CloudLibraryContentType
 import com.nuvio.app.features.cloud.CloudLibraryFile
 import com.nuvio.app.features.cloud.CloudLibraryItem
@@ -129,8 +132,6 @@ import com.nuvio.app.features.library.librarySectionItemKey
 import com.nuvio.app.features.library.showTrackingMembershipRewriteFeedback
 import com.nuvio.app.features.library.toLibraryItem
 import com.nuvio.app.features.library.toMetaPreview
-import com.nuvio.app.features.livetv.LiveTvChannel
-import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.membership.MemberAccessRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
@@ -199,6 +200,7 @@ import com.nuvio.app.features.watchprogress.toContinueWatchingItem
 import com.nuvio.app.navigation.*
 import com.nuvio.app.core.ui.glass.nuvioBackdropSource
 import com.nuvio.app.core.ui.glass.rememberNuvioBackdrop
+import com.nuvio.app.features.servers.ServerMatcher
 import com.nuvio.app.features.servers.ServerRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -413,8 +415,10 @@ internal fun MainAppContent(
     var networkToastBaselineReady by rememberSaveable { mutableStateOf(false) }
     var lastNetworkToastCondition by rememberSaveable { mutableStateOf(NetworkCondition.Unknown.name) }
     var watchSourceReconnectPending by remember { mutableStateOf(false) }
-    val homeCatalogRefreshKey = remember(addonsUiState.addons) {
-        buildAddonCatalogRefreshSignature(addonsUiState.addons)
+    val cloudStreamUiState by CloudStreamRepository.uiState.collectAsStateWithLifecycle()
+    val homeCatalogRefreshKey = remember(addonsUiState.addons, cloudStreamUiState.registryRevision) {
+        buildAddonCatalogRefreshSignature(addonsUiState.addons) +
+            ":cloudstream:${cloudStreamUiState.registryRevision}:${cloudStreamUiState.plugins.count { it.isRunnable }}"
     }
 
     val serversUiState by remember {
@@ -428,6 +432,7 @@ internal fun MainAppContent(
         if (enabledAddons.isWaitingForFirstEnabledManifest()) return@LaunchedEffect
         HomeCatalogSettingsRepository.syncCatalogs(enabledAddons)
         HomeRepository.refresh(enabledAddons)
+        ServerMatcher.warm()
     }
 
     fun activateTab(tab: AppScreenTab) {
@@ -1130,7 +1135,7 @@ internal fun MainAppContent(
 
             val isPartyMedia = PartyRepository.state.value.party?.media?.key ==
                 partyMediaKey(parentMetaType, parentMetaId, seasonNumber, episodeNumber)
-            if (!isPartyMedia && !PlaybackAvailability.current().canStream(type, videoId)) {
+            if (!isPartyMedia && !PlaybackAvailability.current().canStream(type, videoId, parentMetaId)) {
                 NuvioToastController.show(playbackUnavailableMessage)
                 return
             }
@@ -1347,7 +1352,6 @@ internal fun MainAppContent(
                                     LibrarySourceMode.MDBLIST -> stringResource(Res.string.library_mdblist_title)
             LibrarySourceMode.ANILIST -> stringResource(Res.string.library_anilist_title)
             LibrarySourceMode.WETRAKR -> stringResource(Res.string.library_wetrakr_title)
-            LibrarySourceMode.PUBLICMETADB -> stringResource(Res.string.library_publicmetadb_title)
         }
 
         val openLibraryItem: (LibraryItem) -> Unit = { item ->
@@ -1367,7 +1371,6 @@ internal fun MainAppContent(
                 ),
             )
         }
-
         val resolveLibrarySectionTitle = rememberLibrarySectionTitleResolver()
 
         val onLibrarySectionViewAllClick: (LibrarySection, LibrarySortOption) -> Unit = { section, sortOption ->
@@ -1403,7 +1406,7 @@ internal fun MainAppContent(
 
         fun canSelectContinueWatchingStreams(item: ContinueWatchingItem): Boolean =
             !item.isCloudLibraryContinueWatchingItem() &&
-                playbackAvailability.canStream(item.parentMetaType, item.videoId)
+                playbackAvailability.canStream(item.parentMetaType, item.videoId, item.parentMetaId)
 
         val openContinueWatching: (ContinueWatchingItem, Boolean, Boolean) -> Unit = { item, manualSelection, startFromBeginning ->
             resumePromptItem = null

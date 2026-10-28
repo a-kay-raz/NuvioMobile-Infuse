@@ -1,19 +1,38 @@
 package com.nuvio.app.features.player
 
+/**
+ * Customisable layout for the default player's bottom actions pill, ported
+ * from Luqman's "Player buttons" option (Settings -> Playback -> Player).
+ *
+ * Default player only: the legacy player's header buttons are hard-coded and
+ * do not read this layout, exactly like Luqman, where the option is hidden
+ * while the legacy layout is on.
+ *
+ * The fork's button set is wider than Luqman's: Watch Party, PiP, Shuffle,
+ * Orientation and Cast were added by the fork's bottom-pill work and are
+ * included here, after the shared buttons' order is preserved in the default.
+ * The default mirrors the fork's current pill: the old primary pool is
+ * visible on the bar, the old secondary pool sits behind the arrow.
+ */
 enum class PlayerToolbarButton(val storageId: String) {
+    WATCH_PARTY("watch_party"),
+    PICTURE_IN_PICTURE("picture_in_picture"),
+    QUALITY("quality"),
+    SUBTITLES("subtitles"),
+    AUDIO("audio"),
     NEXT_EPISODE("next_episode"),
     SPEED("speed"),
     RESIZE("resize"),
-    SUBTITLES("subtitles"),
     CHAPTERS("chapters"),
-    AUDIO("audio"),
-    QUALITY("quality"),
+    SWITCH_ENGINE("switch_engine"),
+    SHUFFLE("shuffle"),
+    ORIENTATION("orientation"),
+    CAST("cast"),
     SOURCES("sources"),
     EPISODES("episodes"),
     RATE("rate"),
     EXTERNAL_PLAYER("external_player"),
     PLAYBACK_INFO("playback_info"),
-    SWITCH_ENGINE("switch_engine"),
     VIDEO_SETTINGS("video_settings"),
     SUBMIT_INTRO("submit_intro"),
     ;
@@ -53,21 +72,26 @@ data class PlayerToolbarLayout(val entries: List<PlayerToolbarEntry>) {
     companion object {
         val Default = PlayerToolbarLayout(
             listOf(
+                PlayerToolbarButton.WATCH_PARTY,
+                PlayerToolbarButton.PICTURE_IN_PICTURE,
+                PlayerToolbarButton.QUALITY,
+                PlayerToolbarButton.SUBTITLES,
+                PlayerToolbarButton.AUDIO,
                 PlayerToolbarButton.NEXT_EPISODE,
                 PlayerToolbarButton.SPEED,
                 PlayerToolbarButton.RESIZE,
-                PlayerToolbarButton.SUBTITLES,
                 PlayerToolbarButton.CHAPTERS,
+                PlayerToolbarButton.SWITCH_ENGINE,
+                PlayerToolbarButton.SHUFFLE,
+                PlayerToolbarButton.ORIENTATION,
+                PlayerToolbarButton.CAST,
             ).map { PlayerToolbarEntry(it, visible = true) } +
                 listOf(
-                    PlayerToolbarButton.AUDIO,
-                    PlayerToolbarButton.QUALITY,
                     PlayerToolbarButton.SOURCES,
                     PlayerToolbarButton.EPISODES,
                     PlayerToolbarButton.RATE,
                     PlayerToolbarButton.EXTERNAL_PLAYER,
                     PlayerToolbarButton.PLAYBACK_INFO,
-                    PlayerToolbarButton.SWITCH_ENGINE,
                     PlayerToolbarButton.VIDEO_SETTINGS,
                     PlayerToolbarButton.SUBMIT_INTRO,
                 ).map { PlayerToolbarEntry(it, visible = false) },

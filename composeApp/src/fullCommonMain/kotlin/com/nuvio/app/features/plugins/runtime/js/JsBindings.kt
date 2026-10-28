@@ -199,8 +199,24 @@ internal object JsBindings {
                 headers: {
                     get: function(name) {
                         return parsed.headers[name.toLowerCase()] || null;
+                    },
+                    has: function(name) {
+                        return name.toLowerCase() in parsed.headers;
+                    },
+                    forEach: function(callback) {
+                        for (var k in parsed.headers) {
+                            callback(parsed.headers[k], k);
+                        }
+                    },
+                    entries: function() {
+                        var res = [];
+                        for (var k in parsed.headers) {
+                            res.push([k, parsed.headers[k]]);
+                        }
+                        return res;
                     }
                 },
+                _rawHeaders: parsed.headers,
                 arrayBuffer: function() {
                     var copy = new Uint8Array(responseBytes.length);
                     copy.set(responseBytes);
@@ -219,6 +235,7 @@ internal object JsBindings {
                 }
             };
         };
+        globalThis.fetch = fetch;
     """.trimIndent()
 
     private fun abortControllerPolyfill() = """
@@ -304,17 +321,25 @@ internal object JsBindings {
             }
             var parsed = __native_parse_url(fullUrl);
             var data = JSON.parse(parsed);
-            this.href = fullUrl;
+            this._baseHref = fullUrl.split('#')[0];
+            this._hash = data.hash || '';
             this.protocol = data.protocol;
             this.host = data.host;
             this.hostname = data.hostname;
             this.port = data.port;
             this.pathname = data.pathname;
             this.search = data.search;
-            this.hash = data.hash;
             this.origin = data.protocol + '//' + data.host;
             this.searchParams = new URLSearchParams(data.search || '');
         };
+        Object.defineProperty(URL.prototype, 'href', {
+            get: function() { return this._baseHref + (this._hash ? (this._hash.charAt(0) === '#' ? this._hash : '#' + this._hash) : ''); },
+            set: function(v) { this._baseHref = v.split('#')[0]; this._hash = v.indexOf('#') !== -1 ? v.substring(v.indexOf('#')) : ''; }
+        });
+        Object.defineProperty(URL.prototype, 'hash', {
+            get: function() { return this._hash; },
+            set: function(v) { this._hash = v ? (v.charAt(0) === '#' ? v : '#' + v) : ''; }
+        });
         URL.prototype.toString = function() { return this.href; };
 
         var URLSearchParams = function(init) {
@@ -950,6 +975,11 @@ internal object JsBindings {
         function createCheerioWrapper(docId, selector) {
             var elementIds;
             if (typeof selector === 'string') {
+                if (selector.trim().indexOf('<') === 0) {
+                    var newDocId = __cheerio_load(selector);
+                    var allIdsJson = __cheerio_select(newDocId, '*');
+                    return createCheerioWrapperFromIds(newDocId, JSON.parse(allIdsJson));
+                }
                 var idsJson = __cheerio_select(docId, selector);
                 elementIds = JSON.parse(idsJson);
             } else {
@@ -979,6 +1009,25 @@ internal object JsBindings {
                     }
                     return createCheerioWrapperFromIds(docId, allIds);
                 },
+                closest: function(sel) {
+                    var cur = this;
+                    while (cur && cur.length > 0) {
+                        var p = cur.parent();
+                        if (!p || p.length === 0) return createCheerioWrapperFromIds(docId, []);
+                        if (p.is(sel)) return p;
+                        cur = p;
+                    }
+                    return createCheerioWrapperFromIds(docId, []);
+                },
+                is: function(sel) {
+                    if (ids.length === 0) return false;
+                    try {
+                        var matches = JSON.parse(__cheerio_select(docId, sel));
+                        return matches.indexOf(ids[0]) !== -1;
+                    } catch (e) {
+                        return false;
+                    }
+                },
                 text: function() {
                     if (ids.length === 0) return '';
                     return __cheerio_text(docId, ids.join(','));
@@ -991,6 +1040,19 @@ internal object JsBindings {
                     if (ids.length === 0) return undefined;
                     var val = __cheerio_attr(docId, ids[0], name);
                     return val === '__UNDEFINED__' ? undefined : val;
+                },
+                data: function(key) {
+                    return this.attr('data-' + key);
+                },
+                val: function() {
+                    return this.attr('value') || '';
+                },
+                hasClass: function(cls) {
+                    var c = this.attr('class') || '';
+                    return (' ' + c + ' ').indexOf(' ' + cls + ' ') !== -1;
+                },
+                remove: function() {
+                    return this;
                 },
                 first: function() { return createCheerioWrapperFromIds(docId, ids.length > 0 ? [ids[0]] : []); },
                 last: function() { return createCheerioWrapperFromIds(docId, ids.length > 0 ? [ids[ids.length - 1]] : []); },
@@ -1047,7 +1109,14 @@ internal object JsBindings {
                     return wrapper;
                 },
                 children: function(sel) { return this.find(sel || '*'); },
-                parent: function() { return createCheerioWrapperFromIds(docId, []); },
+                parent: function() {
+                    var parentIds = [];
+                    for (var i = 0; i < ids.length; i++) {
+                        var pId = __cheerio_parent(docId, ids[i]);
+                        if (pId && pId !== '__NONE__') parentIds.push(pId);
+                    }
+                    return createCheerioWrapperFromIds(docId, parentIds);
+                },
                 toArray: function() { return ids.map(function(id) { return createCheerioWrapperFromIds(docId, [id]); }); }
             };
             return wrapper;
@@ -1061,6 +1130,31 @@ internal object JsBindings {
             }
             if (moduleName === 'crypto-js') {
                 return CryptoJS;
+            }
+            if (moduleName === 'axios') {
+                return (typeof axios !== 'undefined' ? axios : globalThis.axios);
+            }
+            if (moduleName === 'url') {
+                return {
+                    URL: globalThis.URL,
+                    parse: function(u) { return new URL(u); }
+                };
+            }
+            if (moduleName === 'querystring' || moduleName === 'qs') {
+                return {
+                    stringify: function(obj) { return new URLSearchParams(obj).toString(); },
+                    parse: function(str) {
+                        var s = new URLSearchParams(str);
+                        var r = {};
+                        s.forEach(function(v, k) { r[k] = v; });
+                        return r;
+                    }
+                };
+            }
+            if (moduleName === 'path') {
+                return {
+                    join: function() { return Array.prototype.slice.call(arguments).join('/'); }
+                };
             }
             throw new Error("Module '" + moduleName + "' is not available");
         };

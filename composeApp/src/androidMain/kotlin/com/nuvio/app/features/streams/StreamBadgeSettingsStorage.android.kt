@@ -58,7 +58,6 @@ actual object StreamBadgeSettingsStorage {
     actual fun saveShowStreamSearch(enabled: Boolean) {
         saveBoolean(showStreamSearchKey, enabled)
     }
-
     actual fun loadShowInPlayer(): Boolean? = loadBoolean(showInPlayerKey)
 
     actual fun saveShowInPlayer(enabled: Boolean) {
@@ -70,7 +69,6 @@ actual object StreamBadgeSettingsStorage {
     actual fun savePlayerBadgeSource(source: String) {
         saveString(playerBadgeSourceKey, source)
     }
-
     actual fun loadStreamBadgePlacement(): String? = loadString(streamBadgePlacementKey)
 
     actual fun loadStreamBackgroundMode(): String? = loadString(streamBackgroundModeKey)
@@ -99,30 +97,44 @@ actual object StreamBadgeSettingsStorage {
             ?.apply()
     }
 
-    private fun loadString(key: String): String? =
-        preferences?.getString(ProfileScopedKey.of(key), null)
+    private fun loadString(key: String): String? {
+        val prefs = preferences ?: return null
+        val scoped = prefs.getString(ProfileScopedKey.of(key), null)?.trim()
+        if (!scoped.isNullOrEmpty()) return scoped
+        val profile1 = prefs.getString(ProfileScopedKey.of(key, 1), null)?.trim()
+        if (!profile1.isNullOrEmpty()) return profile1
+        return prefs.getString(key, null)?.trim()
+    }
 
     private fun saveString(key: String, value: String) {
         preferences
             ?.edit()
             ?.putString(ProfileScopedKey.of(key), value)
+            ?.putString(key, value)
             ?.apply()
     }
 
-    private fun loadBoolean(key: String): Boolean? =
-        preferences?.let { sharedPreferences ->
-            val scopedKey = ProfileScopedKey.of(key)
-            if (sharedPreferences.contains(scopedKey)) {
-                sharedPreferences.getBoolean(scopedKey, false)
-            } else {
-                null
-            }
+    private fun loadBoolean(key: String): Boolean? {
+        val prefs = preferences ?: return null
+        val scopedKey = ProfileScopedKey.of(key)
+        if (prefs.contains(scopedKey)) {
+            return prefs.getBoolean(scopedKey, false)
         }
+        val profile1Key = ProfileScopedKey.of(key, 1)
+        if (prefs.contains(profile1Key)) {
+            return prefs.getBoolean(profile1Key, false)
+        }
+        if (prefs.contains(key)) {
+            return prefs.getBoolean(key, false)
+        }
+        return null
+    }
 
     private fun saveBoolean(key: String, enabled: Boolean) {
         preferences
             ?.edit()
             ?.putBoolean(ProfileScopedKey.of(key), enabled)
+            ?.putBoolean(key, enabled)
             ?.apply()
     }
 

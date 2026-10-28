@@ -42,6 +42,7 @@ internal data class HomeCatalogSettingsUiState(
     val heroTrailerStartUnmuted: Boolean = false,
     val showCatalogType: Boolean = true,
     val hideUnreleasedContent: Boolean = false,
+    val cloudStreamProviderId: String? = null,
     val items: List<HomeCatalogSettingsItem> = emptyList(),
 ) {
     val signature: String
@@ -59,6 +60,8 @@ internal data class HomeCatalogSettingsUiState(
             append(showCatalogType)
             append('|')
             append(hideUnreleasedContent)
+            append('|')
+            append(cloudStreamProviderId.orEmpty())
             append('|')
             append(
                 items.joinToString(separator = "|") { item ->
@@ -114,6 +117,7 @@ internal data class HomeCatalogSettingsSnapshot(
     val heroStyle: HomeHeroStyle,
     val showCatalogType: Boolean,
     val hideUnreleasedContent: Boolean,
+    val cloudStreamProviderId: String? = null,
     val preferences: Map<String, HomeCatalogPreference>,
 )
 
@@ -135,6 +139,7 @@ private data class StoredHomeCatalogSettingsPayload(
     val heroTrailerStartUnmuted: Boolean = false,
     val showCatalogType: Boolean = true,
     val hideUnreleasedContent: Boolean = false,
+    val cloudStreamProviderId: String? = null,
     val items: List<StoredHomeCatalogPreference> = emptyList(),
 )
 
@@ -172,6 +177,7 @@ object HomeCatalogSettingsRepository {
     private var heroTrailerStartUnmuted = false
     private var showCatalogType = true
     private var hideUnreleasedContent = false
+    private var cloudStreamProviderId: String? = null
 
     fun onProfileChanged() {
         hasLoaded = false
@@ -183,6 +189,7 @@ object HomeCatalogSettingsRepository {
         heroTrailerStartUnmuted = false
         showCatalogType = true
         hideUnreleasedContent = false
+        cloudStreamProviderId = null
         definitions = emptyList()
         collectionDefinitions = emptyList()
         lastCatalogSync = null
@@ -204,6 +211,7 @@ object HomeCatalogSettingsRepository {
         heroTrailerStartUnmuted = false
         showCatalogType = true
         hideUnreleasedContent = false
+        cloudStreamProviderId = null
         _uiState.value = HomeCatalogSettingsUiState()
     }
 
@@ -223,6 +231,7 @@ object HomeCatalogSettingsRepository {
             return
         }
         normalizePreferences()
+        enforcePinnedCollectionsAtTop()
         publish()
         persist()
     }
@@ -237,6 +246,7 @@ object HomeCatalogSettingsRepository {
         }
         lastCollectionSync = syncInput
         normalizePreferences()
+        enforcePinnedCollectionsAtTop()
         publish()
         persist()
         HomeRepository.applyCurrentSettings()
@@ -249,6 +259,7 @@ object HomeCatalogSettingsRepository {
             heroStyle = heroStyle,
             showCatalogType = showCatalogType,
             hideUnreleasedContent = hideUnreleasedContent,
+            cloudStreamProviderId = cloudStreamProviderId,
             preferences = preferences.mapValues { (_, value) ->
                 HomeCatalogPreference(
                     customTitle = value.customTitle,
@@ -258,6 +269,19 @@ object HomeCatalogSettingsRepository {
                 )
             },
         )
+    }
+
+    fun selectedCloudStreamProviderId(): String? {
+        ensureLoaded()
+        return cloudStreamProviderId
+    }
+
+    fun setCloudStreamProviderId(providerId: String?) {
+        ensureLoaded()
+        val normalized = providerId?.trim()?.takeIf { it.isNotEmpty() }
+        if (cloudStreamProviderId == normalized) return
+        cloudStreamProviderId = normalized
+        persist()
     }
 
     fun setHeroEnabled(enabled: Boolean) {
@@ -331,7 +355,7 @@ object HomeCatalogSettingsRepository {
     }
 
     fun setHeroSourceEnabled(key: String, enabled: Boolean) {
-        updatePreference(key, pushRemote = false, heroSourcesChanged = true) { preference ->
+        updatePreference(key, pushRemote = false) { preference ->
             if (!enabled) {
                 preference.copy(heroSourceEnabled = false)
             } else if (selectedHeroSourceCount(excludingKey = key) >= HERO_SOURCE_SELECTION_LIMIT) {
@@ -363,6 +387,7 @@ object HomeCatalogSettingsRepository {
         heroTrailerStartUnmuted = false
         showCatalogType = true
         hideUnreleasedContent = false
+        cloudStreamProviderId = null
         preferences = emptyMap()
         normalizePreferences()
         publish()
@@ -393,7 +418,6 @@ object HomeCatalogSettingsRepository {
             updatedPreferences[itemKey] = current.copy(order = index)
         }
         preferences = updatedPreferences
-        enforcePinnedCollectionsAtTop()
         publish()
         persist()
         HomeRepository.applyCurrentSettings()
@@ -422,6 +446,7 @@ object HomeCatalogSettingsRepository {
             heroTrailerStartUnmuted = parsedPayload.heroTrailerStartUnmuted
             showCatalogType = parsedPayload.showCatalogType
             hideUnreleasedContent = parsedPayload.hideUnreleasedContent
+            cloudStreamProviderId = parsedPayload.cloudStreamProviderId
             preferences = parsedPayload.items.associateBy { it.key }
             publish()
             return
@@ -481,7 +506,6 @@ object HomeCatalogSettingsRepository {
             )
         }
         preferences = normalized.toMap()
-        enforcePinnedCollectionsAtTop()
     }
 
     private fun publish() {
@@ -527,6 +551,7 @@ object HomeCatalogSettingsRepository {
             heroTrailerStartUnmuted = heroTrailerStartUnmuted,
             showCatalogType = showCatalogType,
             hideUnreleasedContent = hideUnreleasedContent,
+            cloudStreamProviderId = cloudStreamProviderId,
             items = items,
         )
     }
@@ -542,6 +567,7 @@ object HomeCatalogSettingsRepository {
                     heroTrailerStartUnmuted = heroTrailerStartUnmuted,
                     showCatalogType = showCatalogType,
                     hideUnreleasedContent = hideUnreleasedContent,
+                    cloudStreamProviderId = cloudStreamProviderId,
                     items = preferences.values.sortedBy { it.order },
                 ),
             ),
@@ -551,7 +577,6 @@ object HomeCatalogSettingsRepository {
     private fun updatePreference(
         key: String,
         pushRemote: Boolean = true,
-        heroSourcesChanged: Boolean = false,
         transform: (StoredHomeCatalogPreference) -> StoredHomeCatalogPreference,
     ) {
         ensureLoaded()
@@ -561,7 +586,7 @@ object HomeCatalogSettingsRepository {
         preferences = preferences + (key to updated)
         publish()
         persist()
-        HomeRepository.applyCurrentSettings(heroSourcesChanged = heroSourcesChanged)
+        HomeRepository.applyCurrentSettings()
         if (pushRemote) {
             HomeCatalogSettingsSyncService.triggerPush()
         }
@@ -597,7 +622,6 @@ object HomeCatalogSettingsRepository {
             updatedPreferences[itemKey] = current.copy(order = index)
         }
         preferences = updatedPreferences
-        enforcePinnedCollectionsAtTop()
 
         publish()
         persist()

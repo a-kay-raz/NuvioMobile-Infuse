@@ -9,6 +9,9 @@ interface PlayerEngineController {
     fun pause()
     fun seekTo(positionMs: Long)
     fun seekBy(offsetMs: Long)
+    fun requestSeekPreviewFrame(positionMs: Long, onResult: (PlayerSeekPreview?) -> Unit) {
+        onResult(null)
+    }
     fun retry()
     fun isPictureInPictureSupported(): Boolean = false
     fun startPictureInPicture() {}
@@ -58,8 +61,6 @@ interface PlayerEngineController {
     fun updateNowPlayingMetadata(info: PlayerNowPlayingInfo) {}
     fun clearNowPlayingInfo() {}
     suspend fun getMediaInfo(): PlayerMediaInfo = PlayerMediaInfo()
-    /** The loaded file's chapters, unsorted; empty when the engine cannot read them. */
-    suspend fun getChapters(): List<PlayerChapter> = emptyList()
 }
 
 internal fun sanitizePlaybackHeaders(headers: Map<String, String>?): Map<String, String> {

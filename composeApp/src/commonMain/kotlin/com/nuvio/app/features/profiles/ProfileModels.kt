@@ -109,3 +109,7 @@ fun String.isValidAvatarUrl(): Boolean {
 fun profileAvatarImageUrl(profile: NuvioProfile, avatar: AvatarCatalogItem?): String? =
     normalizedAvatarUrl(profile.avatarUrl)
         ?: avatar?.let(::avatarImageUrl)
+
+fun profileBackgroundImageUrl(profile: NuvioProfile): String? =
+    profile.profileBackgroundUrl?.trim()?.takeIf { it.isValidAvatarUrl() }
+

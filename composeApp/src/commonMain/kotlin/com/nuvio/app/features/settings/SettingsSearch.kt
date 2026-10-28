@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.CollectionsBookmark
@@ -92,10 +93,12 @@ internal fun settingsSearchEntries(
 ): List<SettingsSearchEntry> {
     val accountCategory = stringResource(SettingsCategory.Account.labelRes)
     val generalCategory = stringResource(SettingsCategory.General.labelRes)
+    val enhancedCategory = stringResource(SettingsCategory.Enhanced.labelRes)
     val aboutCategory = stringResource(SettingsCategory.About.labelRes)
     val advancedCategory = stringResource(SettingsCategory.Advanced.labelRes)
 
     val accountPage = stringResource(Res.string.compose_settings_page_account)
+    val nuvioEnhancedPage = stringResource(Res.string.settings_nuvio_enhanced_title)
     val trackingPage = stringResource(Res.string.compose_settings_page_tracking)
     val layoutPage = stringResource(Res.string.compose_settings_page_appearance)
     val advancedPage = stringResource(Res.string.compose_settings_page_advanced)
@@ -203,6 +206,14 @@ internal fun settingsSearchEntries(
         description = stringResource(Res.string.compose_settings_root_account_description),
         category = accountCategory,
         icon = Icons.Rounded.AccountCircle,
+    )
+    addPage(
+        page = SettingsPage.NuvioEnhanced,
+        key = "nuvio-enhanced",
+        title = nuvioEnhancedPage,
+        description = stringResource(Res.string.settings_nuvio_enhanced_description),
+        category = enhancedCategory,
+        icon = Icons.Rounded.AutoAwesome,
     )
     addPage(
         page = SettingsPage.TraktAuthentication,
@@ -353,7 +364,6 @@ internal fun settingsSearchEntries(
             target = SettingsSearchTarget.CheckForUpdates,
         )
     }
-
     addRow(
         page = SettingsPage.Account,
         key = "account-status",
@@ -440,18 +450,6 @@ internal fun settingsSearchEntries(
         category = advancedCategory,
         icon = Icons.Rounded.Tune,
     )
-    if (SentrySettingsRepository.isSupported) {
-        addRow(
-            page = SettingsPage.Advanced,
-            key = "sentry-crash-reports",
-            title = stringResource(Res.string.settings_advanced_sentry_reports),
-            description = stringResource(Res.string.settings_advanced_sentry_reports_subtitle),
-            pageLabel = advancedPage,
-            section = stringResource(Res.string.settings_advanced_section_diagnostics),
-            category = advancedCategory,
-            icon = Icons.Rounded.Tune,
-        )
-    }
     addRow(
         page = SettingsPage.Advanced,
         key = "clear-cw-cache",
@@ -705,7 +703,6 @@ internal fun settingsSearchEntries(
                 PlaybackSearchRow("dv7-hevc", stringResource(Res.string.settings_playback_map_dv7_to_hevc), stringResource(Res.string.settings_playback_map_dv7_to_hevc_description)),
                 PlaybackSearchRow("tunneled-playback", stringResource(Res.string.settings_playback_tunneled_playback), stringResource(Res.string.settings_playback_tunneled_playback_description)),
                 PlaybackSearchRow("audio-passthrough", stringResource(Res.string.settings_playback_audio_passthrough), stringResource(Res.string.settings_playback_audio_passthrough_description)),
-                PlaybackSearchRow("exo-chapters", stringResource(Res.string.settings_playback_exo_chapters), stringResource(Res.string.settings_playback_exo_chapters_description)),
             ),
         )
         addPlaybackRows(

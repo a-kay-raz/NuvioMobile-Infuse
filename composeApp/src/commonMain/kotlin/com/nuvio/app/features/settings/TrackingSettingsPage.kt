@@ -47,7 +47,6 @@ import com.nuvio.app.features.trakt.TraktContinueWatchingDaysOptions
 import com.nuvio.app.features.trakt.normalizeTraktContinueWatchingDaysCap
 import com.nuvio.app.features.watchprogress.WatchProgressSourceCoordinator
 import com.nuvio.app.features.wetrakr.WeTrakrTracker
-import com.nuvio.app.features.publicmetadb.PublicMetaDbTracker
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.settings_tracking_in_app_rating
@@ -59,9 +58,6 @@ import nuvio.composeapp.generated.resources.tracking_source_anilist
 import nuvio.composeapp.generated.resources.tracking_source_wetrakr
 import nuvio.composeapp.generated.resources.settings_wetrakr_library_description
 import nuvio.composeapp.generated.resources.settings_wetrakr_progress_description
-import nuvio.composeapp.generated.resources.tracking_source_publicmetadb
-import nuvio.composeapp.generated.resources.settings_publicmetadb_library_description
-import nuvio.composeapp.generated.resources.settings_publicmetadb_progress_description
 import nuvio.composeapp.generated.resources.settings_anilist_library_description
 import nuvio.composeapp.generated.resources.settings_anilist_progress_description
 import nuvio.composeapp.generated.resources.settings_anilist_anime_section
@@ -270,14 +266,12 @@ private fun TrackingDataSources(
     val mdblistConnected by remember { MdbListTracker.ensureLoaded(); MdbListTracker.isAuthenticated }.collectAsStateWithLifecycle()
     val anilistConnected by remember { AniListTracker.ensureLoaded(); AniListTracker.isAuthenticated }.collectAsStateWithLifecycle()
     val wetrakrConnected by remember { WeTrakrTracker.ensureLoaded(); WeTrakrTracker.isAuthenticated }.collectAsStateWithLifecycle()
-    val publicMetaDbConnected by remember { PublicMetaDbTracker.ensureLoaded(); PublicMetaDbTracker.isAuthenticated }.collectAsStateWithLifecycle()
     val connectedProviders = buildSet {
         if (traktConnected) add(TrackingProviderId.TRAKT)
         if (simklConnected) add(TrackingProviderId.SIMKL)
         if (mdblistConnected) add(TrackingProviderId.MDBLIST)
         if (anilistConnected) add(TrackingProviderId.ANILIST)
         if (wetrakrConnected) add(TrackingProviderId.WETRAKR)
-        if (publicMetaDbConnected) add(TrackingProviderId.PUBLICMETADB)
     }
     val effectiveLibrarySource = effectiveLibrarySourceMode(settingsUiState.librarySourceMode) { provider ->
         provider in connectedProviders
@@ -367,7 +361,7 @@ private fun TrackingDataSources(
             title = stringResource(Res.string.trakt_library_source_dialog_title),
             subtitle = stringResource(Res.string.trakt_library_source_dialog_subtitle),
             selectedValue = effectiveLibrarySource,
-            options = librarySourceOptions(traktConnected, simklConnected, mdblistConnected, anilistConnected, wetrakrConnected, publicMetaDbConnected),
+            options = librarySourceOptions(traktConnected, simklConnected, mdblistConnected, anilistConnected, wetrakrConnected),
             onSelected = TrackingSettingsRepository::setLibrarySourceMode,
             onDismiss = { activePickerName = null },
         )
@@ -376,7 +370,7 @@ private fun TrackingDataSources(
             title = stringResource(Res.string.trakt_watch_progress_dialog_title),
             subtitle = stringResource(Res.string.tracking_watch_progress_dialog_subtitle),
             selectedValue = effectiveProgressSource,
-            options = watchProgressSourceOptions(traktConnected, simklConnected, mdblistConnected, anilistConnected, wetrakrConnected, publicMetaDbConnected),
+            options = watchProgressSourceOptions(traktConnected, simklConnected, mdblistConnected, anilistConnected, wetrakrConnected),
             onSelected = { source ->
                 scope.launch {
                     WatchProgressSourceCoordinator.selectSource(
@@ -543,7 +537,6 @@ private fun librarySourceOptions(
     mdblistConnected: Boolean,
     anilistConnected: Boolean,
     wetrakrConnected: Boolean,
-    publicMetaDbConnected: Boolean,
 ): List<TrackingPickerOption<LibrarySourceMode>> {
     val traktAvailable = isTrackingBrandAvailable(TrackingBrand.TRAKT, traktConnected, simklConnected)
     val simklAvailable = isTrackingBrandAvailable(TrackingBrand.SIMKL, traktConnected, simklConnected)
@@ -588,13 +581,6 @@ private fun librarySourceOptions(
             enabled = wetrakrConnected,
             unavailableReason = trackingUnavailableReason(TrackingBrand.WETRAKR, wetrakrConnected),
         ),
-        TrackingPickerOption(
-            value = LibrarySourceMode.PUBLICMETADB,
-            title = stringResource(Res.string.tracking_source_publicmetadb),
-            description = stringResource(Res.string.settings_publicmetadb_library_description),
-            enabled = publicMetaDbConnected,
-            unavailableReason = trackingUnavailableReason(TrackingBrand.PUBLICMETADB, publicMetaDbConnected),
-        ),
     )
 }
 
@@ -605,7 +591,6 @@ private fun watchProgressSourceOptions(
     mdblistConnected: Boolean,
     anilistConnected: Boolean,
     wetrakrConnected: Boolean,
-    publicMetaDbConnected: Boolean,
 ): List<TrackingPickerOption<WatchProgressSource>> {
     val traktAvailable = isTrackingBrandAvailable(TrackingBrand.TRAKT, traktConnected, simklConnected)
     val simklAvailable = isTrackingBrandAvailable(TrackingBrand.SIMKL, traktConnected, simklConnected)
@@ -649,13 +634,6 @@ private fun watchProgressSourceOptions(
             description = stringResource(Res.string.settings_wetrakr_progress_description),
             enabled = wetrakrConnected,
             unavailableReason = trackingUnavailableReason(TrackingBrand.WETRAKR, wetrakrConnected),
-        ),
-        TrackingPickerOption(
-            value = WatchProgressSource.PUBLICMETADB,
-            title = stringResource(Res.string.tracking_source_publicmetadb),
-            description = stringResource(Res.string.settings_publicmetadb_progress_description),
-            enabled = publicMetaDbConnected,
-            unavailableReason = trackingUnavailableReason(TrackingBrand.PUBLICMETADB, publicMetaDbConnected),
         ),
     )
 }
@@ -720,7 +698,6 @@ private fun librarySourceModeLabel(source: LibrarySourceMode): String = when (so
     LibrarySourceMode.MDBLIST -> stringResource(Res.string.tracking_source_mdblist)
     LibrarySourceMode.ANILIST -> stringResource(Res.string.tracking_source_anilist)
     LibrarySourceMode.WETRAKR -> stringResource(Res.string.tracking_source_wetrakr)
-    LibrarySourceMode.PUBLICMETADB -> stringResource(Res.string.tracking_source_publicmetadb)
 }
 
 @Composable
@@ -731,7 +708,6 @@ private fun watchProgressSourceLabel(source: WatchProgressSource): String = when
     WatchProgressSource.MDBLIST -> stringResource(Res.string.tracking_source_mdblist)
     WatchProgressSource.ANILIST -> stringResource(Res.string.tracking_source_anilist)
     WatchProgressSource.WETRAKR -> stringResource(Res.string.tracking_source_wetrakr)
-    WatchProgressSource.PUBLICMETADB -> stringResource(Res.string.tracking_source_publicmetadb)
 }
 
 @Composable

@@ -2,6 +2,7 @@ package com.nuvio.app.features.settings
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
@@ -31,6 +32,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_notifications
 import nuvio.composeapp.generated.resources.compose_settings_page_omdb
 import nuvio.composeapp.generated.resources.compose_settings_page_playback
 import nuvio.composeapp.generated.resources.compose_settings_page_plugins
+import nuvio.composeapp.generated.resources.compose_settings_page_cloudstream
 import nuvio.composeapp.generated.resources.compose_settings_page_poster_customization
 import nuvio.composeapp.generated.resources.compose_settings_page_profile
 import nuvio.composeapp.generated.resources.compose_settings_page_root
@@ -41,6 +43,8 @@ import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.compose_settings_page_tracking
 import nuvio.composeapp.generated.resources.compose_settings_root_downloads_title
 import nuvio.composeapp.generated.resources.settings_account
+import nuvio.composeapp.generated.resources.settings_nuvio_enhanced_category
+import nuvio.composeapp.generated.resources.settings_nuvio_enhanced_title
 import org.jetbrains.compose.resources.StringResource
 
 internal enum class SettingsCategory(
@@ -49,6 +53,7 @@ internal enum class SettingsCategory(
 ) {
     Account(Res.string.settings_account, Icons.Rounded.AccountCircle),
     General(Res.string.compose_settings_category_general, Icons.Rounded.Settings),
+    Enhanced(Res.string.settings_nuvio_enhanced_category, Icons.Rounded.AutoAwesome),
     About(Res.string.compose_settings_category_about, Icons.Rounded.Info),
     Advanced(Res.string.compose_settings_page_advanced, Icons.Rounded.Tune),
 }
@@ -75,12 +80,12 @@ internal enum class SettingsPage(
     ),
     SupportersContributors(
         titleRes = Res.string.compose_settings_page_supporters_contributors,
-        category = SettingsCategory.About,
+        category = SettingsCategory.General,
         parentPage = Root,
     ),
     LicensesAttributions(
         titleRes = Res.string.compose_settings_page_licenses_attributions,
-        category = SettingsCategory.About,
+        category = SettingsCategory.General,
         parentPage = Root,
     ),
     WhatsNew(
@@ -118,6 +123,11 @@ internal enum class SettingsPage(
         category = SettingsCategory.General,
         parentPage = Root,
     ),
+    NuvioEnhanced(
+        titleRes = Res.string.settings_nuvio_enhanced_title,
+        category = SettingsCategory.Enhanced,
+        parentPage = Root,
+    ),
     Downloads(
         titleRes = Res.string.compose_settings_root_downloads_title,
         category = SettingsCategory.General,
@@ -145,6 +155,11 @@ internal enum class SettingsPage(
     ),
     Plugins(
         titleRes = Res.string.compose_settings_page_plugins,
+        category = SettingsCategory.General,
+        parentPage = ContentDiscovery,
+    ),
+    CloudStream(
+        titleRes = Res.string.compose_settings_page_cloudstream,
         category = SettingsCategory.General,
         parentPage = ContentDiscovery,
     ),

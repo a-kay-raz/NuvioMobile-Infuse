@@ -432,7 +432,6 @@ fun SettingsScreen(
                         androidLibmpvVideoOutput = playerSettingsUiState.androidLibmpvVideoOutput,
                         androidLibmpvHardwareDecodingEnabled = playerSettingsUiState.androidLibmpvHardwareDecodingEnabled,
                         androidLibmpvYuv420pEnabled = playerSettingsUiState.androidLibmpvYuv420pEnabled,
-                        androidExoChaptersEnabled = playerSettingsUiState.androidExoChaptersEnabled,
                         decoderPriority = playerSettingsUiState.decoderPriority,
                         mapDV7ToHevc = playerSettingsUiState.mapDV7ToHevc,
                         tunnelingEnabled = playerSettingsUiState.tunnelingEnabled,
@@ -513,7 +512,6 @@ fun SettingsScreen(
                         androidLibmpvVideoOutput = playerSettingsUiState.androidLibmpvVideoOutput,
                         androidLibmpvHardwareDecodingEnabled = playerSettingsUiState.androidLibmpvHardwareDecodingEnabled,
                         androidLibmpvYuv420pEnabled = playerSettingsUiState.androidLibmpvYuv420pEnabled,
-                        androidExoChaptersEnabled = playerSettingsUiState.androidExoChaptersEnabled,
                         decoderPriority = playerSettingsUiState.decoderPriority,
                         mapDV7ToHevc = playerSettingsUiState.mapDV7ToHevc,
                         tunnelingEnabled = playerSettingsUiState.tunnelingEnabled,
@@ -606,7 +604,6 @@ private fun MobileSettingsScreen(
     androidLibmpvVideoOutput: AndroidLibmpvVideoOutput,
     androidLibmpvHardwareDecodingEnabled: Boolean,
     androidLibmpvYuv420pEnabled: Boolean,
-    androidExoChaptersEnabled: Boolean,
     decoderPriority: Int,
     mapDV7ToHevc: Boolean,
     tunnelingEnabled: Boolean,
@@ -793,6 +790,7 @@ private fun MobileSettingsScreen(
                             onAdvancedClick = { onPageChange(SettingsPage.Advanced) },
                             onNotificationsClick = { onPageChange(SettingsPage.Notifications) },
                             onContentDiscoveryClick = { onPageChange(SettingsPage.ContentDiscovery) },
+                            onNuvioEnhancedClick = { onPageChange(SettingsPage.NuvioEnhanced) },
                             onIntegrationsClick = { onPageChange(SettingsPage.Integrations) },
                             onTrackingClick = { onPageChange(SettingsPage.TraktAuthentication) },
                             onSupportersContributorsClick = onSupportersContributorsClick,
@@ -811,6 +809,9 @@ private fun MobileSettingsScreen(
                         )
                     }
                 }
+                SettingsPage.NuvioEnhanced -> nuvioEnhancedSettingsContent(
+                    isTablet = false,
+                )
                 SettingsPage.Account -> accountSettingsContent(
                     isTablet = false,
                 )
@@ -846,7 +847,6 @@ private fun MobileSettingsScreen(
                     androidLibmpvVideoOutput = androidLibmpvVideoOutput,
                     androidLibmpvHardwareDecodingEnabled = androidLibmpvHardwareDecodingEnabled,
                     androidLibmpvYuv420pEnabled = androidLibmpvYuv420pEnabled,
-                    androidExoChaptersEnabled = androidExoChaptersEnabled,
                     decoderPriority = decoderPriority,
                     mapDV7ToHevc = mapDV7ToHevc,
                     tunnelingEnabled = tunnelingEnabled,
@@ -917,9 +917,11 @@ private fun MobileSettingsScreen(
                 SettingsPage.ContentDiscovery -> contentDiscoveryContent(
                     isTablet = false,
                     showPluginsEntry = AppFeaturePolicy.pluginsEnabled,
+                    showCloudStreamEntry = AppFeaturePolicy.pluginsEnabled,
                     onAddonsClick = onAddonsClick,
                     onPluginsClick = onPluginsClick,
                     onMediaServersClick = { onPageChange(SettingsPage.MediaServers) },
+                    onCloudStreamClick = { onPageChange(SettingsPage.CloudStream) },
                 )
                 SettingsPage.Addons -> addonsSettingsContent()
                 SettingsPage.MediaServers -> mediaServersSettingsContent(
@@ -931,6 +933,7 @@ private fun MobileSettingsScreen(
                     onBack = onNavigateBack,
                 )
                 SettingsPage.Plugins -> if (AppFeaturePolicy.pluginsEnabled) pluginsSettingsContent() else addonsSettingsContent()
+                SettingsPage.CloudStream -> if (AppFeaturePolicy.pluginsEnabled) cloudStreamSettingsContent() else addonsSettingsContent()
                 SettingsPage.Homescreen -> homescreenSettingsContent(
                     isTablet = false,
                     heroEnabled = homescreenHeroEnabled,
@@ -1058,7 +1061,6 @@ private fun TabletSettingsScreen(
     androidLibmpvVideoOutput: AndroidLibmpvVideoOutput,
     androidLibmpvHardwareDecodingEnabled: Boolean,
     androidLibmpvYuv420pEnabled: Boolean,
-    androidExoChaptersEnabled: Boolean,
     decoderPriority: Int,
     mapDV7ToHevc: Boolean,
     tunnelingEnabled: Boolean,
@@ -1291,6 +1293,7 @@ private fun TabletSettingsScreen(
                                 onAdvancedClick = { openInlinePage(SettingsPage.Advanced) },
                                 onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
                                 onContentDiscoveryClick = { openInlinePage(SettingsPage.ContentDiscovery) },
+                                onNuvioEnhancedClick = { openInlinePage(SettingsPage.NuvioEnhanced) },
                                 onIntegrationsClick = { openInlinePage(SettingsPage.Integrations) },
                                 onTrackingClick = { openInlinePage(SettingsPage.TraktAuthentication) },
                                 onSupportersContributorsClick = { openInlinePage(SettingsPage.SupportersContributors) },
@@ -1306,13 +1309,17 @@ private fun TabletSettingsScreen(
                                 },
                                 onWatchPartyClick = watchPartyRowClick,
                                 showAccountSection = activeCategory == SettingsCategory.Account,
+                                showEnhancedSection = activeCategory == SettingsCategory.Enhanced,
                                 showGeneralSection = activeCategory == SettingsCategory.General,
-                                showAboutSection = activeCategory == SettingsCategory.About,
+                                showAboutSection = false,
                                 showAdvancedSection = activeCategory == SettingsCategory.Advanced,
                                 showSupportersContributorsPage = AppFeaturePolicy.supportersContributorsPageEnabled,
                             )
                         }
                     }
+                    SettingsPage.NuvioEnhanced -> nuvioEnhancedSettingsContent(
+                        isTablet = true,
+                    )
                     SettingsPage.Account -> accountSettingsContent(
                         isTablet = true,
                     )
@@ -1347,7 +1354,6 @@ private fun TabletSettingsScreen(
                         androidLibmpvVideoOutput = androidLibmpvVideoOutput,
                         androidLibmpvHardwareDecodingEnabled = androidLibmpvHardwareDecodingEnabled,
                         androidLibmpvYuv420pEnabled = androidLibmpvYuv420pEnabled,
-                        androidExoChaptersEnabled = androidExoChaptersEnabled,
                         decoderPriority = decoderPriority,
                         mapDV7ToHevc = mapDV7ToHevc,
                         tunnelingEnabled = tunnelingEnabled,
@@ -1418,9 +1424,11 @@ private fun TabletSettingsScreen(
                     SettingsPage.ContentDiscovery -> contentDiscoveryContent(
                         isTablet = true,
                         showPluginsEntry = AppFeaturePolicy.pluginsEnabled,
+                        showCloudStreamEntry = AppFeaturePolicy.pluginsEnabled,
                         onAddonsClick = { openInlinePage(SettingsPage.Addons) },
                         onPluginsClick = { openInlinePage(SettingsPage.Plugins) },
                         onMediaServersClick = { openInlinePage(SettingsPage.MediaServers) },
+                        onCloudStreamClick = { openInlinePage(SettingsPage.CloudStream) },
                     )
                     SettingsPage.Addons -> addonsSettingsContent()
                     SettingsPage.MediaServers -> mediaServersSettingsContent(
@@ -1432,6 +1440,7 @@ private fun TabletSettingsScreen(
                         onBack = onNavigateBack,
                     )
                     SettingsPage.Plugins -> if (AppFeaturePolicy.pluginsEnabled) pluginsSettingsContent() else addonsSettingsContent()
+                    SettingsPage.CloudStream -> if (AppFeaturePolicy.pluginsEnabled) cloudStreamSettingsContent() else addonsSettingsContent()
                     SettingsPage.Homescreen -> homescreenSettingsContent(
                         isTablet = true,
                         heroEnabled = homescreenHeroEnabled,

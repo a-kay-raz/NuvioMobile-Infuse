@@ -302,8 +302,8 @@ object WatchProgressRepository {
         }
     }
 
-    fun onProfileChanged(profileId: Int) {
-        if (profileId == currentProfileId && hasLoaded) return
+    fun onProfileChanged(profileId: Int, forceReload: Boolean = false) {
+        if (profileId == currentProfileId && hasLoaded && !forceReload) return
         updateActiveSource(
             effectiveWatchProgressSource(
                 requestedSource = TrackingSettingsRepository.uiState.value.watchProgressSource,
@@ -749,6 +749,7 @@ object WatchProgressRepository {
                 serverEntries = serverEntries,
                 localEntries = reconciliation.entries,
                 dirtyProgressKeys = dirtyBeforeApply,
+                preserveAllLocalMissingFromRemote = true,
             )
         } else {
             val newestRemoteByKey = linkedMapOf<String, WatchProgressEntry>()
@@ -763,6 +764,12 @@ object WatchProgressRepository {
             newestRemoteByKey
         }
         replaceLocalEntries(updatedEntries)
+        updatedEntries.values.forEach { entry ->
+            val matchingRemote = serverEntries.firstOrNull { it.resolvedProgressKey() == entry.resolvedProgressKey() }
+            if (matchingRemote == null || entry.lastUpdatedEpochMs > matchingRemote.lastWatched) {
+                markProgressDirty(entry)
+            }
+        }
         acknowledgeDirtyProgressFromSnapshot(
             serverEntries = serverEntries,
             localEntriesBeforeApply = reconciliation.entries,
@@ -932,6 +939,7 @@ object WatchProgressRepository {
         serverEntries: Collection<ProgressSyncRecord>,
         localEntries: Collection<WatchProgressEntry>,
         dirtyProgressKeys: Set<String>,
+        preserveAllLocalMissingFromRemote: Boolean = false,
     ): Map<String, WatchProgressEntry> {
         val reconciliation = reconcileLocalProgressKeysWithSnapshot(
             serverEntries = serverEntries,
@@ -953,7 +961,10 @@ object WatchProgressRepository {
 
         localByProgressKey.forEach { (progressKey, localEntry) ->
             val remoteEntry = merged[progressKey]
-            if (progressKey !in effectiveDirtyKeys) return@forEach
+            val shouldPreserve = progressKey in effectiveDirtyKeys ||
+                (preserveAllLocalMissingFromRemote && remoteEntry == null) ||
+                (remoteEntry != null && localEntry.isFresherThan(remoteEntry))
+            if (!shouldPreserve) return@forEach
             if (remoteEntry == null || localEntry.isFresherThan(remoteEntry)) {
                 merged[progressKey] = localEntry
             }

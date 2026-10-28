@@ -141,9 +141,16 @@ object ProfileRepository {
         }
         try {
             val result = SupabaseProvider.client.postgrest.rpc("sync_pull_profiles")
-            val profiles = result.decodeList<NuvioProfile>()
+            val remoteProfiles = result.decodeList<NuvioProfile>()
+            val profiles = remoteProfiles.map { remote ->
+                val local = _state.value.profiles.find { it.profileIndex == remote.profileIndex }
+                remote.copy(
+                    profileBackgroundId = remote.profileBackgroundId ?: local?.profileBackgroundId,
+                    profileBackgroundUrl = remote.profileBackgroundUrl ?: local?.profileBackgroundUrl,
+                )
+            }.sortedBy { it.profileIndex }
             _state.value = _state.value.copy(
-                profiles = profiles.sortedBy { it.profileIndex },
+                profiles = profiles,
                 isLoaded = true,
                 activeProfile = profiles.find { it.profileIndex == activeProfileIndex }
                     ?: profiles.firstOrNull(),
@@ -181,16 +188,18 @@ object ProfileRepository {
         TrackingProviderRegistry.onProfileChanged()
         LibraryRepository.onProfileChanged(profileIndex)
         LibraryDisplaySettingsRepository.onProfileChanged()
-        WatchProgressRepository.onProfileChanged(profileIndex)
+        WatchProgressRepository.onProfileChanged(profileIndex, forceReload = true)
         AddonRepository.onProfileChanged(profileIndex)
         if (com.nuvio.app.core.build.AppFeaturePolicy.pluginsEnabled) {
             PluginRepository.onProfileChanged(profileIndex)
         }
         ThemeSettingsRepository.onProfileChanged()
+        com.nuvio.app.features.settings.NuvioEnhancedSettingsRepository.onProfileChanged()
         PosterCardStyleRepository.onProfileChanged()
         CardDepthStyleRepository.onProfileChanged()
         PlayerSettingsRepository.onProfileChanged()
         StreamBadgeSettingsRepository.onProfileChanged()
+        com.nuvio.app.features.streams.StreamSourcePreferencesRepository.onProfileChanged()
         P2pSettingsRepository.onProfileChanged()
         HomeCatalogSettingsRepository.onProfileChanged()
         HomeRepository.clear()
@@ -211,8 +220,8 @@ object ProfileRepository {
     }
 
     suspend fun pushProfiles(profiles: List<ProfilePushPayload>) {
+        applyPayloadsLocally(profiles)
         if (AuthRepository.state.value.isAnonymous) {
-            applyPayloadsLocally(profiles)
             return
         }
         try {
@@ -236,6 +245,8 @@ object ProfileRepository {
         avatarColorHex: String,
         avatarId: String? = null,
         avatarUrl: String? = null,
+        profileBackgroundId: String? = null,
+        profileBackgroundUrl: String? = null,
         usesPrimaryAddons: Boolean = false,
     ) {
         val existing = _state.value.profiles
@@ -260,6 +271,8 @@ object ProfileRepository {
             usesPrimaryAddons = usesPrimaryAddons,
             avatarId = avatarId,
             avatarUrl = avatarUrl,
+            profileBackgroundId = profileBackgroundId,
+            profileBackgroundUrl = profileBackgroundUrl,
         )
 
         pushProfiles(allPayloads)
@@ -530,11 +543,12 @@ object ProfileRepository {
     }
 
     private suspend fun applyPayloadsLocally(payloads: List<ProfilePushPayload>) {
-        val authState = AuthRepository.state.value as? AuthState.Authenticated ?: return
+        val currentUserId = (AuthRepository.state.value as? AuthState.Authenticated)?.userId ?: "local_user"
         val profiles = payloads.map { p ->
+            val existing = _state.value.profiles.find { it.profileIndex == p.profileIndex }
             NuvioProfile(
-                id = "",
-                userId = authState.userId,
+                id = existing?.id.orEmpty(),
+                userId = existing?.userId?.takeIf { it.isNotBlank() } ?: currentUserId,
                 profileIndex = p.profileIndex,
                 name = p.name,
                 avatarColorHex = p.avatarColorHex,
@@ -694,12 +708,12 @@ object ProfileRepository {
     }
 
     private fun persist() {
-        val authState = AuthRepository.state.value as? AuthState.Authenticated ?: return
+        val userId = (AuthRepository.state.value as? AuthState.Authenticated)?.userId ?: "local_user"
         val state = _state.value
         ProfileStorage.savePayload(
             json.encodeToString(
                 StoredProfilePayload(
-                    userId = authState.userId,
+                    userId = userId,
                     activeProfileIndex = activeProfileIndex,
                     hasEverSelectedProfile = state.hasEverSelectedProfile,
                     rememberLastProfileEnabled = state.rememberLastProfileEnabled,

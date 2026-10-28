@@ -311,6 +311,7 @@ fun NuvioPrimaryButton(
     onClick: () -> Unit = {},
 ) {
     val tokens = MaterialTheme.nuvio
+    val shape = tokens.shapes.button
     val palette = MaterialTheme.themePalette
     val containerBrush = if (enabled) {
         palette.accentBrush()
@@ -322,10 +323,11 @@ fun NuvioPrimaryButton(
         modifier = modifier
             .fillMaxWidth()
             .height(NuvioTokens.Space.s48 + NuvioTokens.Space.s4)
-            .clip(tokens.shapes.button)
+            .clip(shape)
+            .nuvioKeyboardFocusIndicator(shape, enabled)
             .background(containerBrush),
         enabled = enabled,
-        shape = tokens.shapes.button,
+        shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
             contentColor = tokens.colors.onAccent,

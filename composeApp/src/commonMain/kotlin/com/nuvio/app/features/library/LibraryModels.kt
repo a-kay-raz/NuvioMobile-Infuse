@@ -56,7 +56,6 @@ enum class LibrarySourceMode {
     MDBLIST,
     ANILIST,
     WETRAKR,
-    PUBLICMETADB,
 }
 
 data class LibraryUiState(

@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.ImageBitmap
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.player_ios_hardware_decoder_off
 import nuvio.composeapp.generated.resources.player_ios_preset_compatibility_desc
@@ -33,7 +34,7 @@ data class PlayerLaunch(
     val streamSubtitle: String? = null,
     val bingeGroup: String? = null,
     val pauseDescription: String? = null,
-    val providerName: String,
+    val providerName: String = "",
     val providerAddonId: String? = null,
     val contentType: String? = null,
     val videoId: String? = null,
@@ -238,6 +239,17 @@ data class PlayerPlaybackSnapshot(
     val chapters: List<PlayerChapter> = emptyList(),
     val castAvailable: Boolean = false,
     val castDeviceName: String? = null,
+)
+
+data class PlayerChapter(
+    val title: String,
+    val startMs: Long,
+)
+
+/** A decoded video frame shown while the user drags the playback timeline. */
+data class PlayerSeekPreview(
+    val positionMs: Long,
+    val image: ImageBitmap,
 )
 
 data class PlayerNowPlayingInfo(

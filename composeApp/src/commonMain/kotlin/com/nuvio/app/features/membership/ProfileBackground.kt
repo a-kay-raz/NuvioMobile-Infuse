@@ -9,8 +9,9 @@ sealed interface ProfileBackgroundSelection {
 
 fun resolveProfileBackground(
     profile: NuvioProfile,
-    entitlements: CosmeticEntitlements,
+    entitlements: CosmeticEntitlements = CosmeticEntitlements.All,
 ): ProfileBackgroundSelection? {
+
     profile.profileBackgroundUrl?.trim()?.takeIf { it.isNotBlank() }?.let {
         return ProfileBackgroundSelection.Custom(it)
     }

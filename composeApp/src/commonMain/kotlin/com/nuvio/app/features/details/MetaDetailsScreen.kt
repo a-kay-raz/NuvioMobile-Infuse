@@ -102,12 +102,16 @@ import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.TrackingListPickerDialog
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.core.ui.rememberHeroStretchState
+import androidx.compose.material.icons.rounded.Download
 import com.kyant.backdrop.Backdrop
 import com.nuvio.app.core.ui.glass.LocalLiquidGlassBackdrop
 import com.nuvio.app.core.ui.glass.nuvioBackdropSource
 import com.nuvio.app.core.ui.glass.rememberNuvioBackdrop
 import com.nuvio.app.features.downloads.DownloadsSettingsRepository
+import com.nuvio.app.features.settings.NuvioEnhancedSettingsRepository
 import com.nuvio.app.features.details.components.DetailActions
+import com.nuvio.app.features.details.components.DetailSecondaryAction
+import nuvio.composeapp.generated.resources.streams_download_file
 import com.nuvio.app.features.details.components.CommentDetailSheet
 import com.nuvio.app.features.details.components.DetailAdditionalInfoSection
 import com.nuvio.app.features.details.components.DetailCastSection
@@ -223,6 +227,10 @@ fun MetaDetailsScreen(
     val metaScreenSettingsUiState by remember {
         MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val enhancedSettingsUiState by remember {
+        NuvioEnhancedSettingsRepository.ensureLoaded()
+        NuvioEnhancedSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val mdbListSettings by remember {
         MdbListSettingsRepository.ensureLoaded()
@@ -932,7 +940,8 @@ fun MetaDetailsScreen(
                     DownloadsSettingsRepository.showDownloadButton
                 }.collectAsStateWithLifecycle()
                 val downloadHandler = onDownload
-                val onDownloadClick: (() -> Unit)? = if (showDownloadButton && downloadHandler != null) {
+                val isDownloadActionEnabled = showDownloadButton || metaScreenSettingsUiState.showDownloadAction
+                val onDownloadClick: (() -> Unit)? = if (isDownloadActionEnabled && downloadHandler != null) {
                     {
                         stopHeroTrailerForNavigation()
                         if ((meta.type == "series" || hasEpisodes) && seriesAction != null) {
@@ -977,7 +986,7 @@ fun MetaDetailsScreen(
                 val manualPlayHandler = onPlayManually
                 val showManualPlayOption = manualPlayHandler != null && StreamAutoPlayPolicy.isEffectivelyEnabled(playerSettingsUiState)
                 val onPrimaryPlayLongClick: (() -> Unit)? = manualPlayHandler
-                    ?.takeIf { !shufflePoolEmpty && showManualPlayOption && playbackAvailability.canStream(meta.type, primaryVideoId) }
+                    ?.takeIf { !shufflePoolEmpty && showManualPlayOption && playbackAvailability.canStream(meta.type, primaryVideoId, meta.id) }
                     ?.let { manualPlay ->
                         {
                             stopHeroTrailerForNavigation()
@@ -1441,6 +1450,7 @@ fun MetaDetailsScreen(
                                     )
 
                                     if (
+                                        !enhancedSettingsUiState.nuvioReadEnabled &&
                                         metaScreenSettingsUiState.showRatingMap &&
                                         metaScreenSettingsUiState.episodeRatingsVisibility.showRatings &&
                                         hasEpisodes &&
@@ -1592,7 +1602,7 @@ fun MetaDetailsScreen(
                                         areCurrentlyWatched = isSeasonWatched,
                                     )
                                 },
-                                showPlayManually = showManualPlayOption,
+                                showPlayManually = showManualPlayOption && playbackAvailability.canStream(meta.type, selectedEpisode.id, meta.id),
                                 onPlayManually = {
                                     onEpisodeManualPlayClick(selectedEpisode)
                                 },
@@ -1986,7 +1996,11 @@ fun MetaDetailsScreen(
                             ),
                         )
                     }
-                    if (onPlayManually != null && StreamAutoPlayPolicy.isEffectivelyEnabled(playerSettingsUiState)) {
+                    if (
+                        onPlayManually != null &&
+                        StreamAutoPlayPolicy.isEffectivelyEnabled(playerSettingsUiState) &&
+                        playbackAvailability.canStream(meta.type, selectedEpisode.id, meta.id)
+                    ) {
                         add(
                             PosterZoomOverlayAction(
                                 icon = Icons.Default.PlayArrow,
@@ -2523,6 +2537,17 @@ private fun ConfiguredMetaSections(
                     showOverallRatings = settings.showOverallRatings,
                     isMdbListActive = isMdbListActive,
                     horizontalScrollPadding = horizontalScrollPadding,
+                    episodeRatingsVisibility = settings.episodeRatingsVisibility,
+                    isEpisodeWatched = { episode ->
+                        isEpisodeWatchedForActions(
+                            meta = meta,
+                            episode = episode,
+                            watchedKeys = watchedKeys,
+                            progressByVideoId = progressByVideoId,
+                        )
+                    },
+                    onEpisodeClick = onEpisodeClick,
+                    onEpisodeLongPress = onEpisodeLongPress,
                 )
             }
             MetaScreenSectionKey.PRODUCTION -> {

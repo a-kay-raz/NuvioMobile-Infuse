@@ -4,12 +4,44 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.stopScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,11 +49,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.cloudstream.CloudStreamPluginItem
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.core.network.NetworkCondition
@@ -52,13 +92,22 @@ import com.nuvio.app.features.details.SeriesPrimaryAction
 import com.nuvio.app.features.details.seriesPrimaryAction
 import com.nuvio.app.features.home.components.HomeCatalogRowSection
 import com.nuvio.app.features.home.components.HomeContinueWatchingSection
+import com.nuvio.app.features.home.components.HomeConciergeSection
+import com.nuvio.app.features.home.buildHomeConciergeState
+import com.nuvio.app.features.home.buildHomeReleaseRadarItems
+import com.nuvio.app.features.home.buildHomeSmartShelves
+import com.nuvio.app.features.home.components.HomeSmartShelfComposerSection
 import com.nuvio.app.features.home.components.HomeEmptyStateCard
 import com.nuvio.app.features.home.components.HomeHeroReservedSpace
 import com.nuvio.app.features.home.components.HomeHeroSection
 import com.nuvio.app.features.home.components.HomeSkeletonHero
+import com.nuvio.app.features.settings.NuvioHeroArtworkSource
+import com.nuvio.app.features.settings.filteredByNuvioEnhancedReleaseRadar
 import com.nuvio.app.features.home.components.HomeSkeletonRow
 import com.nuvio.app.features.home.components.HomeContinueWatchingSectionBottomPadding
 import com.nuvio.app.features.home.components.ContinueWatchingLayout
+import com.nuvio.app.features.library.LibraryRepository
+import com.nuvio.app.features.settings.NuvioEnhancedSettingsRepository
 import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import com.nuvio.app.features.tracking.WatchProgressSource
 import com.nuvio.app.features.watched.WatchedItem
@@ -165,12 +214,43 @@ fun HomeScreen(
     val watchProgressUiState by WatchProgressRepository.uiState.collectAsStateWithLifecycle()
     val effectiveWatchProgressSource = watchProgressUiState.source
     val cloudLibraryUiState by CloudLibraryRepository.uiState.collectAsStateWithLifecycle()
+    val libraryUiState by remember {
+        LibraryRepository.ensureLoaded()
+        LibraryRepository.uiState
+    }.collectAsStateWithLifecycle()
     val networkStatusUiState by NetworkStatusRepository.uiState.collectAsStateWithLifecycle()
     val trackingSettingsUiState by remember {
         TrackingSettingsRepository.ensureLoaded()
         TrackingSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
+    val enhancedSettings by remember {
+        NuvioEnhancedSettingsRepository.ensureLoaded()
+        NuvioEnhancedSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
     var observedOfflineState by remember { mutableStateOf(false) }
+    var cloudStreamProviderMenuExpanded by remember { mutableStateOf(false) }
+    val cloudStreamUiState by CloudStreamRepository.uiState.collectAsStateWithLifecycle()
+    val runnableCloudStreamProviders = remember(cloudStreamUiState.registryRevision) {
+        cloudStreamUiState.plugins
+            .filter(CloudStreamPluginItem::isRunnable)
+            .sortedBy { it.metadata.name.lowercase() }
+    }
+    val selectedCloudStreamProviderId by HomeRepository.selectedCloudStreamProviderId.collectAsStateWithLifecycle()
+
+    LaunchedEffect(runnableCloudStreamProviders, selectedCloudStreamProviderId) {
+        if (runnableCloudStreamProviders.isNotEmpty()) {
+            if (selectedCloudStreamProviderId == null) {
+                HomeRepository.setSelectedCloudStreamProvider(runnableCloudStreamProviders.first().metadata.id.value)
+            } else if (selectedCloudStreamProviderId != "off" &&
+                selectedCloudStreamProviderId != "all" &&
+                runnableCloudStreamProviders.none { it.metadata.id.value == selectedCloudStreamProviderId }
+            ) {
+                HomeRepository.setSelectedCloudStreamProvider(runnableCloudStreamProviders.first().metadata.id.value)
+            }
+        } else if (selectedCloudStreamProviderId != null && selectedCloudStreamProviderId != "off") {
+            HomeRepository.setSelectedCloudStreamProvider(null)
+        }
+    }
 
     ScreenActivityEffect(scrollToTopRequests) { active ->
         if (!active) return@ScreenActivityEffect
@@ -570,6 +650,75 @@ fun HomeScreen(
     }
     val hasContinueWatchingRows = continueWatchingItems.isNotEmpty() || upcomingItems.isNotEmpty()
 
+    val homeReleaseRadarItems = remember(
+        continueWatchingItems,
+        libraryUiState.items,
+        homeUiState.sections,
+        enhancedSettings.enhancedHomeFeaturesEnabled,
+        enhancedSettings.releaseRadarHomeSignalsEnabled,
+        enhancedSettings.releaseRadarLibraryOnly,
+        enhancedSettings.releaseRadarWindowDays,
+        enhancedSettings.releaseRadarContentFilter,
+    ) {
+        if (!enhancedSettings.enhancedHomeFeaturesEnabled || !enhancedSettings.releaseRadarHomeSignalsEnabled) {
+            emptyList()
+        } else {
+            buildHomeReleaseRadarItems(
+                todayIsoDate = CurrentDateProvider.todayIsoDate(),
+                continueWatchingItems = continueWatchingItems,
+                libraryItems = libraryUiState.items,
+                catalogSections = homeUiState.sections,
+                resolvedLibraryDetails = emptyMap(),
+            ).filteredByNuvioEnhancedReleaseRadar(enhancedSettings)
+        }
+    }
+
+    val homeSmartShelves = remember(
+        continueWatchingItems,
+        libraryUiState.items,
+        homeUiState.sections,
+        enhancedSettings.enhancedHomeFeaturesEnabled,
+        enhancedSettings.smartShelvesEnabled,
+        enhancedSettings.quietHomeModeEnabled,
+    ) {
+        if (!enhancedSettings.enhancedHomeFeaturesEnabled || !enhancedSettings.smartShelvesEnabled || enhancedSettings.quietHomeModeEnabled) {
+            emptyList()
+        } else {
+            buildHomeSmartShelves(
+                continueWatchingItems = continueWatchingItems,
+                libraryItems = libraryUiState.items,
+                catalogSections = homeUiState.sections,
+            )
+        }
+    }
+
+    val homeConciergeState = remember(
+        activeProfileId,
+        profileState.activeProfile?.name,
+        continueWatchingItems,
+        homeReleaseRadarItems,
+        libraryUiState.items,
+        homeUiState.sections,
+        enhancedSettings,
+    ) {
+        if (!enhancedSettings.enhancedHomeFeaturesEnabled || !enhancedSettings.nuvioConciergeEnabled || enhancedSettings.quietHomeModeEnabled) {
+            null
+        } else {
+            runCatching {
+                buildHomeConciergeState(
+                    profileName = profileState.activeProfile?.name ?: "Profile",
+                    continueWatchingItems = continueWatchingItems,
+                    releaseRadarItems = homeReleaseRadarItems,
+                    libraryItems = libraryUiState.items,
+                    catalogSections = homeUiState.sections,
+                    smartResumeEnabled = enhancedSettings.smartResumeEnabled,
+                    releaseRadarEnabled = enhancedSettings.releaseRadarHomeSignalsEnabled,
+                    profileStatsEnabled = enhancedSettings.profileStatsEnabled,
+                )
+            }.getOrNull()
+        }
+    }
+
     ScreenActivityEffect(activeProfileId, continueWatchingItems.isNotEmpty(), hasUserScrolledContinueWatching) { active ->
         if (!active) return@ScreenActivityEffect
         if (!hasUserScrolledContinueWatching && continueWatchingItems.isNotEmpty()) {
@@ -888,7 +1037,7 @@ fun HomeScreen(
         }
     }
 
-    val hasActiveAddons = enabledAddons.any { it.manifest != null }
+    val hasActiveAddons = enabledAddons.any { it.manifest != null } || runnableCloudStreamProviders.isNotEmpty()
     val serversUiState by remember {
         ServerRepository.ensureLoaded()
         ServerRepository.uiState
@@ -913,6 +1062,10 @@ fun HomeScreen(
     }
     val sectionsMap = remember(homeUiState.sections) {
         homeUiState.sections.associateBy(HomeCatalogSection::key)
+    }
+    val cloudStreamHomeSections = remember(homeUiState.sections) {
+        homeUiState.sections
+            .filter { it.key.startsWith("cloudstream:") && it.items.isNotEmpty() }
     }
     val enabledHomeItems = remember(homeSettingsUiState.items) {
         homeSettingsUiState.items.filter { it.enabled }
@@ -1038,18 +1191,34 @@ fun HomeScreen(
                                     modifier = Modifier,
                                     viewportHeight = maxHeight,
                                     mobileBelowSectionHeightHint = mobileHeroBelowSectionHeightHint,
-                                    heroStyle = homeSettingsUiState.heroStyle,
+                                    heroStyle = when {
+                                        enhancedSettings.originalNuvioHeroBannerEnabled -> HomeHeroStyle.FULL_BLEED
+                                        enhancedSettings.streamingShowcaseHeroEnabled -> HomeHeroStyle.FULL_BLEED
+                                        else -> homeSettingsUiState.heroStyle
+                                    },
                                     listState = homeListState,
                                     stretchPx = { heroStretchState.stretchPx },
                                     // animateCollectionGifs doubles as "Home is the visible route" — it already
                                     // turns false whenever a screen (like Details) is pushed on top of it, which
                                     // is also exactly when hero trailer playback must stop, not just pause.
-                                    trailerPlaybackEnabled = homeSettingsUiState.heroTrailerPlaybackEnabled &&
+                                    trailerPlaybackEnabled = (homeSettingsUiState.heroTrailerPlaybackEnabled ||
+                                        (enhancedSettings.streamingShowcaseHeroEnabled && enhancedSettings.streamingShowcaseVideoPreviewEnabled)) &&
                                         animateCollectionGifs,
                                     trailerStartDelaySeconds = homeSettingsUiState.heroTrailerStartDelaySeconds,
-                                    trailerStartUnmuted = homeSettingsUiState.heroTrailerStartUnmuted,
-                                    showImdbRating = homeHeroState.showImdbRating,
-                                    showMdbListRatings = homeHeroState.showMdbListRatings,
+                                    trailerStartUnmuted = enhancedSettings.streamingShowcaseVideoPreviewSoundEnabled || homeSettingsUiState.heroTrailerStartUnmuted,
+                                    showImdbRating = homeHeroState.showImdbRating && enhancedSettings.showHeroRatings,
+                                    showMdbListRatings = homeHeroState.showMdbListRatings && enhancedSettings.showHeroRatings,
+                                    preferredArtworkSource = if (enhancedSettings.posterArtHeroEnabled && !enhancedSettings.originalNuvioHeroBannerEnabled) {
+                                        NuvioHeroArtworkSource.Poster
+                                    } else {
+                                        enhancedSettings.heroArtworkSource
+                                    },
+                                    showHeroOverview = enhancedSettings.showHeroOverview,
+                                    showHeroDetailsButton = enhancedSettings.showHeroDetailsButton,
+                                    heroRefreshHapticsEnabled = enhancedSettings.heroRefreshHapticsEnabled,
+                                    heroDisplayMode = enhancedSettings.heroDisplayMode,
+                                    compactHeroMetadata = enhancedSettings.compactHeroMetadata,
+                                    ratingsAboveMetadata = enhancedSettings.ratingsAboveMetadata,
                                     onItemClick = onPosterClick,
                                     onActiveArtworkChange = onActiveHeroArtworkChange,
                                 )
@@ -1076,9 +1245,10 @@ fun HomeScreen(
                             layout = continueWatchingLayout,
                             continueWatchingListState = continueWatchingListState,
                             upcomingListState = upcomingListState,
+                            showReadyBadge = enhancedSettings.showContinueWatchingReadyBadge,
                             onItemClick = onContinueWatchingClick,
                             onItemLongPress = onContinueWatchingLongPress,
-                        disintegrationRequest = continueWatchingDisintegrationRequest,
+                            disintegrationRequest = continueWatchingDisintegrationRequest,
                         )
                         items(3) {
                             HomeSkeletonRow(
@@ -1097,9 +1267,10 @@ fun HomeScreen(
                             layout = continueWatchingLayout,
                             continueWatchingListState = continueWatchingListState,
                             upcomingListState = upcomingListState,
+                            showReadyBadge = enhancedSettings.showContinueWatchingReadyBadge,
                             onItemClick = onContinueWatchingClick,
                             onItemLongPress = onContinueWatchingLongPress,
-                        disintegrationRequest = continueWatchingDisintegrationRequest,
+                            disintegrationRequest = continueWatchingDisintegrationRequest,
                         )
                         item {
                             when {
@@ -1188,10 +1359,33 @@ fun HomeScreen(
                             layout = continueWatchingLayout,
                             continueWatchingListState = continueWatchingListState,
                             upcomingListState = upcomingListState,
+                            showReadyBadge = enhancedSettings.showContinueWatchingReadyBadge,
                             onItemClick = onContinueWatchingClick,
                             onItemLongPress = onContinueWatchingLongPress,
-                        disintegrationRequest = continueWatchingDisintegrationRequest,
+                            disintegrationRequest = continueWatchingDisintegrationRequest,
                         )
+
+                        if (homeConciergeState != null) {
+                            item(key = "home_concierge_section", contentType = "concierge") {
+                                HomeConciergeSection(
+                                    state = homeConciergeState,
+                                    sectionPadding = homeSectionPadding,
+                                    onPosterClick = onPosterClick,
+                                    onContinueWatchingClick = onContinueWatchingClick,
+                                    modifier = Modifier.padding(bottom = 14.dp),
+                                )
+                            }
+                        }
+
+                        if (homeSmartShelves.isNotEmpty()) {
+                            item(key = "home_smart_shelves_section", contentType = "smart_shelves") {
+                                HomeSmartShelfComposerSection(
+                                    shelves = homeSmartShelves,
+                                    sectionPadding = homeSectionPadding,
+                                    onPosterClick = onPosterClick,
+                                )
+                            }
+                        }
 
                         keyedEnabledHomeItems.forEach { keyedSettingsItem ->
                             val settingsItem = keyedSettingsItem.value
@@ -1215,6 +1409,7 @@ fun HomeScreen(
                                         HomeCatalogRowSection(
                                             section = section,
                                             entries = section.items.take(HOME_CATALOG_PREVIEW_LIMIT),
+                                            posterCardStyle = posterCardStyle,
                                             modifier = Modifier.padding(bottom = 12.dp),
                                             sectionPadding = homeSectionPadding,
                                             onViewAllClick = if (section.canOpenCatalog(HOME_CATALOG_PREVIEW_LIMIT)) {
@@ -1231,6 +1426,308 @@ fun HomeScreen(
                                 }
                             }
                         }
+
+
+                        cloudStreamHomeSections.forEach { section ->
+                            item(key = section.key, contentType = "catalog") {
+                                HomeCatalogRowSection(
+                                    section = section,
+                                    entries = section.items.take(HOME_CATALOG_PREVIEW_LIMIT),
+                                    posterCardStyle = posterCardStyle,
+                                    modifier = Modifier.padding(bottom = 12.dp),
+                                    sectionPadding = homeSectionPadding,
+                                    onViewAllClick = if (section.canOpenCatalog(HOME_CATALOG_PREVIEW_LIMIT)) {
+                                        onCatalogClick?.let { { it(section) } }
+                                    } else {
+                                        null
+                                    },
+                                    watchedKeys = watchedUiState.watchedKeys,
+                                    fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+                                    onPosterClick = onPosterClick,
+                                    onPosterLongClick = onPosterLongClick,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        val hasDiscoveryProviders = runnableCloudStreamProviders.isNotEmpty()
+        if (hasDiscoveryProviders) {
+            if (cloudStreamProviderMenuExpanded) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            cloudStreamProviderMenuExpanded = false
+                        },
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(
+                        end = 16.dp,
+                        bottom = nativeBottomNavigationOverlayHeight + 16.dp,
+                    ),
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    val themeAccent = MaterialTheme.colorScheme.primary
+                    val themeSurface = MaterialTheme.colorScheme.surface
+                    val themeOnSurface = MaterialTheme.colorScheme.onSurface
+
+                    if (cloudStreamProviderMenuExpanded) {
+                        Box(
+                            modifier = Modifier
+                                .widthIn(min = 160.dp, max = 200.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(themeSurface.copy(alpha = 0.95f))
+                                .border(1.dp, themeAccent.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+                                .padding(8.dp),
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 280.dp)
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                val hasAnyExtensions = runnableCloudStreamProviders.isNotEmpty()
+                                val isAllExtensionsSelected = selectedCloudStreamProviderId == "all"
+
+                                if (hasAnyExtensions) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .then(
+                                                if (isAllExtensionsSelected) {
+                                                    Modifier.background(themeAccent.copy(alpha = 0.16f))
+                                                } else {
+                                                    Modifier
+                                                }
+                                            )
+                                            .clickable {
+                                                if (isAllExtensionsSelected) {
+                                                    HomeRepository.setSelectedCloudStreamProvider("off")
+                                                } else {
+                                                    HomeRepository.setSelectedCloudStreamProvider("all")
+                                                }
+                                            }
+                                            .padding(horizontal = 7.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        if (isAllExtensionsSelected) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(22.dp)
+                                                    .background(themeAccent.copy(alpha = 0.25f), RoundedCornerShape(6.dp)),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.PlayArrow,
+                                                    contentDescription = null,
+                                                    tint = themeAccent,
+                                                    modifier = Modifier.size(14.dp),
+                                                )
+                                            }
+                                        } else {
+                                            Box(
+                                                modifier = Modifier.size(22.dp),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Layers,
+                                                    contentDescription = null,
+                                                    tint = themeOnSurface.copy(alpha = 0.70f),
+                                                    modifier = Modifier.size(14.dp),
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(7.dp))
+                                        Text(
+                                            text = "All Extensions",
+                                            color = if (isAllExtensionsSelected) themeOnSurface else themeOnSurface.copy(alpha = 0.85f),
+                                            fontWeight = if (isAllExtensionsSelected) FontWeight.Bold else FontWeight.Medium,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.weight(1f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        if (isAllExtensionsSelected) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Check,
+                                                contentDescription = null,
+                                                tint = themeAccent,
+                                                modifier = Modifier.size(15.dp),
+                                            )
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(14.dp)
+                                                    .border(1.2.dp, themeOnSurface.copy(alpha = 0.35f), CircleShape),
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                }
+
+                                if (runnableCloudStreamProviders.isNotEmpty()) {
+                                    Text(
+                                        text = "CLOUDSTREAM",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = themeAccent,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
+                                    runnableCloudStreamProviders.forEach { provider ->
+                                        val isSelected = provider.metadata.id.value == selectedCloudStreamProviderId && selectedCloudStreamProviderId != "off"
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .then(
+                                                    if (isSelected) {
+                                                        Modifier.background(themeAccent.copy(alpha = 0.16f))
+                                                    } else {
+                                                        Modifier
+                                                    }
+                                                )
+                                                .clickable {
+                                                    val next = if (isSelected) "off" else provider.metadata.id.value
+                                                    HomeRepository.setSelectedCloudStreamProvider(next)
+                                                }
+                                                .padding(horizontal = 7.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            if (isSelected) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(22.dp)
+                                                        .background(themeAccent.copy(alpha = 0.25f), RoundedCornerShape(6.dp)),
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Rounded.PlayArrow,
+                                                        contentDescription = null,
+                                                        tint = themeAccent,
+                                                        modifier = Modifier.size(14.dp),
+                                                    )
+                                                }
+                                            } else {
+                                                Box(
+                                                    modifier = Modifier.size(22.dp),
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Rounded.Movie,
+                                                        contentDescription = null,
+                                                        tint = themeOnSurface.copy(alpha = 0.70f),
+                                                        modifier = Modifier.size(14.dp),
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.width(7.dp))
+                                            Text(
+                                                text = provider.metadata.name,
+                                                color = if (isSelected) themeOnSurface else themeOnSurface.copy(alpha = 0.85f),
+                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                                fontSize = 12.sp,
+                                                modifier = Modifier.weight(1f),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            if (isSelected) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Check,
+                                                    contentDescription = null,
+                                                    tint = themeAccent,
+                                                    modifier = Modifier.size(15.dp),
+                                                )
+                                            } else {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(14.dp)
+                                                        .border(1.2.dp, themeOnSurface.copy(alpha = 0.35f), CircleShape),
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(themeAccent.copy(alpha = 0.18f))
+                                        .clickable { cloudStreamProviderMenuExpanded = false }
+                                        .padding(vertical = 7.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "Done",
+                                        color = themeAccent,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    val isCs3Active = (selectedCloudStreamProviderId != null && selectedCloudStreamProviderId != "off") && runnableCloudStreamProviders.isNotEmpty()
+                    val selectedCloudStreamProvider = runnableCloudStreamProviders.firstOrNull {
+                        it.metadata.id.value == selectedCloudStreamProviderId && selectedCloudStreamProviderId != "off"
+                    }
+                    val pillLabel = when {
+                        isCs3Active -> {
+                            if (selectedCloudStreamProviderId == "all") "All CS3"
+                            else (selectedCloudStreamProvider?.metadata?.name ?: "CloudStream")
+                        }
+                        else -> "Extensions"
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(themeSurface.copy(alpha = 0.92f))
+                            .border(1.2.dp, themeAccent, RoundedCornerShape(20.dp))
+                            .clickable { cloudStreamProviderMenuExpanded = !cloudStreamProviderMenuExpanded }
+                            .padding(horizontal = 11.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Layers,
+                            contentDescription = null,
+                            tint = themeAccent,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = pillLabel,
+                            color = themeOnSurface,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp,
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Icon(
+                            imageVector = if (cloudStreamProviderMenuExpanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = themeOnSurface.copy(alpha = 0.85f),
+                            modifier = Modifier.size(15.dp),
+                        )
                     }
                 }
             }
@@ -1247,6 +1744,7 @@ private fun LazyListScope.homeContinueWatchingSections(
     layout: ContinueWatchingLayout,
     continueWatchingListState: LazyListState,
     upcomingListState: LazyListState,
+    showReadyBadge: Boolean = true,
     onItemClick: ((ContinueWatchingItem) -> Unit)?,
     onItemLongPress: ((ContinueWatchingItem) -> Unit)?,
     disintegrationRequest: DisintegrationRequest<String>?,
@@ -1261,6 +1759,7 @@ private fun LazyListScope.homeContinueWatchingSections(
                 style = preferences.style,
                 useEpisodeThumbnails = preferences.useEpisodeThumbnails,
                 blurNextUp = preferences.blurNextUp,
+                showReadyBadge = showReadyBadge,
                 modifier = Modifier.padding(bottom = HomeContinueWatchingSectionBottomPadding),
                 sectionPadding = sectionPadding,
                 layout = layout,
@@ -1280,6 +1779,7 @@ private fun LazyListScope.homeContinueWatchingSections(
                 style = preferences.style,
                 useEpisodeThumbnails = preferences.useEpisodeThumbnails,
                 blurNextUp = preferences.blurNextUp,
+                showReadyBadge = showReadyBadge,
                 modifier = Modifier.padding(bottom = HomeContinueWatchingSectionBottomPadding),
                 title = stringResource(Res.string.upcoming_section_title),
                 sectionPadding = sectionPadding,

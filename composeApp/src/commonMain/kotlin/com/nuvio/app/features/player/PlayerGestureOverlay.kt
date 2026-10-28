@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -52,10 +53,6 @@ import nuvio.composeapp.generated.resources.compose_player_brightness
 import nuvio.composeapp.generated.resources.compose_player_volume
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.rounded.ZoomOutMap
-import androidx.compose.material.icons.Icons
-import androidx.compose.foundation.layout.size
 
 @Composable
 internal fun PlayerGestureOverlay(
@@ -109,10 +106,15 @@ private fun PlayerGestureFeedback(
                     val description = stringResource(
                         if (isBrightness) Res.string.compose_player_brightness else Res.string.compose_player_volume,
                     )
-                    val level = feedback.level?.coerceIn(0f, 1f) ?: 0f
+                    val maxLevel = if (isBrightness) 1f else 2f
+                    val rawLevel = feedback.level?.coerceIn(0f, maxLevel) ?: 0f
+                    val isBoosted = !isBrightness && rawLevel > 1.001f
+                    val percent = (rawLevel * 100f).roundToInt()
                     val trackHeight = minOf(maxHeight / 4, 104.dp)
-                    val animatedLevel by animateFloatAsState(level, tween(80), label = "playerGestureLevel")
-                    val percent = (level * 100f).roundToInt()
+                    val baseLevel = rawLevel.coerceIn(0f, 1f)
+                    val boostLevel = (rawLevel - 1f).coerceIn(0f, 1f)
+                    val animatedBaseLevel by animateFloatAsState(baseLevel, tween(80), label = "playerGestureBaseLevel")
+                    val animatedBoostLevel by animateFloatAsState(boostLevel, tween(80), label = "playerGestureBoostLevel")
                     // Fork: gestures can supply their own reading (e.g. a custom label) via messageArgs.
                     val reading = feedback.messageArgs.firstOrNull()?.toString() ?: percent.toString()
                     Column(
@@ -126,9 +128,9 @@ private fun PlayerGestureFeedback(
                         // column evenly on both sides so the bar itself never moves.
                         Text(
                             text = reading,
-                            color = Color.White,
+                            color = if (isBoosted) Color(0xFFFF5252) else Color.White,
                             style = MaterialTheme.nuvioTypeScale.bodySm.copy(
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = if (isBoosted) FontWeight.Bold else FontWeight.SemiBold,
                                 shadow = Shadow(Color.Black.copy(alpha = 0.8f), blurRadius = 8f),
                             ),
                             maxLines = 1,
@@ -140,7 +142,7 @@ private fun PlayerGestureFeedback(
                             modifier = Modifier
                                 .semantics {
                                     contentDescription = description
-                                    progressBarRangeInfo = ProgressBarRangeInfo(level, 0f..1f)
+                                    progressBarRangeInfo = ProgressBarRangeInfo(rawLevel, 0f..maxLevel)
                                 }
                                 .width(6.dp)
                                 .height(trackHeight)
@@ -151,14 +153,26 @@ private fun PlayerGestureFeedback(
                                 Modifier
                                     .align(Alignment.BottomCenter)
                                     .fillMaxWidth()
-                                    .fillMaxHeight(animatedLevel)
+                                    .fillMaxHeight(animatedBaseLevel)
                                     .background(MaterialTheme.themePalette.accentBrush()),
                             )
+                            if (boostLevel > 0f) {
+                                Box(
+                                    Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .fillMaxWidth()
+                                        .fillMaxHeight(animatedBoostLevel)
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(Color(0xFFFF5252), Color(0xFFE53935))
+                                            )
+                                        ),
+                                )
+                            }
                         }
                     }
                 }
-                GestureFeedbackIcon.Speed, GestureFeedbackIcon.SeekForward, GestureFeedbackIcon.SeekBackward,
-                GestureFeedbackIcon.VideoZoom -> {
+                GestureFeedbackIcon.Speed, GestureFeedbackIcon.SeekForward, GestureFeedbackIcon.SeekBackward -> {
                     val message = feedback.messageRes?.let { stringResource(it, *feedback.messageArgs.toTypedArray()) }
                         ?: feedback.message.orEmpty()
                     val secondaryMessage = feedback.secondaryMessageRes?.let {
@@ -174,14 +188,6 @@ private fun PlayerGestureFeedback(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        if (feedback.icon == GestureFeedbackIcon.VideoZoom) {
-                            Icon(
-                                imageVector = Icons.Rounded.ZoomOutMap,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
                         Text(
                             text = message,
                             color = Color.White,

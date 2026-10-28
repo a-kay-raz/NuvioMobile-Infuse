@@ -40,4 +40,9 @@ internal actual object DownloadsStorage {
             }
             ?.apply()
     }
+
+    fun loadExternalFolderUri(): String? = getDownloadLocationUri()
+    fun saveExternalFolderUri(uri: String?) {
+        setDownloadLocationUri(uri)
+    }
 }

@@ -191,6 +191,7 @@ fun PluginsSettingsScreen(
     }
 }
 
+
 @Composable
 fun AccountSettingsScreen(
     onBack: () -> Unit,

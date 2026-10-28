@@ -1394,6 +1394,8 @@
     <string name="settings_playback_selected_count">%1$d selected</string>
     <string name="settings_playback_show_loading_overlay">Loading Overlay</string>
     <string name="settings_playback_show_loading_overlay_description">Show loading screen until first video frame appears.</string>
+    <string name="settings_playback_exo_chapters">Show Chapters</string>
+    <string name="settings_playback_exo_chapters_description">Mark chapters on the progress bar and list them in the player. With ExoPlayer this makes a few small extra requests once playback starts to read MKV and MP4 chapters.</string>
     <string name="settings_playback_pause_overlay">Pause Overlay</string>
     <string name="settings_playback_pause_overlay_description">Show details overlay after 5 seconds while paused.</string>
     <string name="settings_playback_parental_guide">Content Warnings</string>

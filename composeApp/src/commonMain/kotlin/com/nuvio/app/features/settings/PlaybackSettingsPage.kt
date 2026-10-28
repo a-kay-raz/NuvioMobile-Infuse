@@ -435,6 +435,14 @@ private fun PlaybackSettingsSection(
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_playback_exo_chapters),
+                    description = stringResource(Res.string.settings_playback_exo_chapters_description),
+                    checked = autoPlayPlayerSettings.androidExoChaptersEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = PlayerSettingsRepository::setAndroidExoChaptersEnabled,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
                     title = stringResource(Res.string.playback_show_loading_status),
                     description = stringResource(Res.string.playback_show_loading_status_sub),
                     checked = autoPlayPlayerSettings.showPlayerLoadingStatus,

@@ -698,6 +698,7 @@ private fun librarySourceModeLabel(source: LibrarySourceMode): String = when (so
     LibrarySourceMode.MDBLIST -> stringResource(Res.string.tracking_source_mdblist)
     LibrarySourceMode.ANILIST -> stringResource(Res.string.tracking_source_anilist)
     LibrarySourceMode.WETRAKR -> stringResource(Res.string.tracking_source_wetrakr)
+    LibrarySourceMode.PUBLICMETADB -> stringResource(Res.string.tracking_source_publicmetadb)
 }
 
 @Composable
@@ -708,6 +709,7 @@ private fun watchProgressSourceLabel(source: WatchProgressSource): String = when
     WatchProgressSource.MDBLIST -> stringResource(Res.string.tracking_source_mdblist)
     WatchProgressSource.ANILIST -> stringResource(Res.string.tracking_source_anilist)
     WatchProgressSource.WETRAKR -> stringResource(Res.string.tracking_source_wetrakr)
+    WatchProgressSource.PUBLICMETADB -> stringResource(Res.string.tracking_source_publicmetadb)
 }
 
 @Composable

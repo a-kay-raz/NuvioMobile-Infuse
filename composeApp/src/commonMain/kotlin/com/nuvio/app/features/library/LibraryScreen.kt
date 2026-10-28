@@ -462,6 +462,7 @@ fun LibraryScreen(
                             LibrarySourceMode.MDBLIST -> stringResource(Res.string.library_mdblist_title)
                             LibrarySourceMode.ANILIST -> stringResource(Res.string.library_anilist_title)
                             LibrarySourceMode.WETRAKR -> stringResource(Res.string.library_wetrakr_title)
+                            LibrarySourceMode.PUBLICMETADB -> stringResource(Res.string.library_publicmetadb_title)
                         }
                     },
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -627,6 +628,7 @@ fun LibraryScreen(
                                         LibrarySourceMode.MDBLIST -> stringResource(Res.string.library_mdblist_load_failed)
                                         LibrarySourceMode.ANILIST -> stringResource(Res.string.library_anilist_load_failed)
                                         LibrarySourceMode.WETRAKR -> stringResource(Res.string.library_wetrakr_load_failed)
+                                        LibrarySourceMode.PUBLICMETADB -> stringResource(Res.string.library_publicmetadb_load_failed)
                                     },
                                     message = uiState.errorMessage.orEmpty(),
                                     actionLabel = stringResource(Res.string.action_retry),
@@ -647,6 +649,7 @@ fun LibraryScreen(
                                     LibrarySourceMode.MDBLIST -> stringResource(Res.string.library_mdblist_empty_title)
                                     LibrarySourceMode.ANILIST -> stringResource(Res.string.library_anilist_empty_title)
                                     LibrarySourceMode.WETRAKR -> stringResource(Res.string.library_wetrakr_empty_title)
+                                    LibrarySourceMode.PUBLICMETADB -> stringResource(Res.string.library_publicmetadb_empty_title)
                                 },
                                 message = when (uiState.sourceMode) {
                                     LibrarySourceMode.LOCAL -> stringResource(Res.string.library_empty_message)
@@ -655,6 +658,7 @@ fun LibraryScreen(
                                     LibrarySourceMode.MDBLIST -> stringResource(Res.string.library_mdblist_empty_message)
                                     LibrarySourceMode.ANILIST -> stringResource(Res.string.library_anilist_empty_message)
                                     LibrarySourceMode.WETRAKR -> stringResource(Res.string.library_wetrakr_empty_message)
+                                    LibrarySourceMode.PUBLICMETADB -> stringResource(Res.string.library_publicmetadb_empty_message)
                                 },
                             )
                         }

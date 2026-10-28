@@ -588,7 +588,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
                     openEpisodesPanel()
                 }
             } else null,
-            onChaptersClick = if (playbackSnapshot.chapters.isNotEmpty()) {
+            onChaptersClick = if (playerSettingsUiState.androidExoChaptersEnabled && chapters.isNotEmpty()) {
                 {
                     openChaptersPanel()
                 }

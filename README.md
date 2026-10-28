@@ -2,17 +2,17 @@
 
   <img src="https://nuvio.tv/assets/nuvio-app-logo-wordmark.webp" alt="Nuvio Enhanced" width="320" />
 
-  <h1>Nuvio Enhanced 2</h1> 
+  <h1>NuvioMobile-Infuse</h1> 
 
   <p>
     An advanced, feature-packed fork of <a href="https://github.com/NuvioMedia/NuvioMobile">Nuvio Mobile</a> that keeps pace with upstream while introducing a pure <b>CloudStream 3 (CS3)</b> & <b>Stremio</b> engine, out-of-the-box tracking integrations, hardware volume boost, and deep platform polish.
     <br /><br />
-    Bring your own sources. Nuvio Enhanced transforms them into a unified streaming library with rich artwork, ratings, synchronized subtitles, and your progress saved across all devices.
+    Bring your own sources. NuvioMobile-Infuse transforms them into a unified streaming library with rich artwork, ratings, synchronized subtitles, and your progress saved across all devices.
   </p>
 
   <p>
-    <a href="https://github.com/techforfriend/Nuvio-enhanced-2/releases/latest">
-      <img src="https://img.shields.io/github/v/release/techforfriend/Nuvio-enhanced-2?color=blue&label=Latest%20Release&style=for-the-badge" alt="Latest Release" />
+    <a href="https://github.com/a-kay-raz/NuvioMobile-Infuse/releases/latest">
+      <img src="https://img.shields.io/github/v/release/a-kay-raz/NuvioMobile-Infuse?color=blue&label=Latest%20Release&style=for-the-badge" alt="Latest Release" />
     </a>
     <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green?style=for-the-badge" alt="Platform" />
     <img src="https://img.shields.io/badge/License-GPL--3.0-orange?style=for-the-badge" alt="License" />
@@ -29,17 +29,16 @@
 
 ### Android
 Download the latest pre-compiled APK directly from the releases page:
-- 📲 **[Download Latest Android APK](https://github.com/techforfriend/Nuvio-enhanced-2/releases/latest)**
+- 📲 **[Download Latest Android APK](https://github.com/a-kay-raz/NuvioMobile-Infuse/releases/latest)** — `androidApp-full-arm64-v8a-release.apk` (arm64, v0.6.5)
 
 ### iOS (AltStore / SideStore / LiveContainer)
-Grab the latest IPA build from the releases page and sideload via your preferred tool:
-- 🍏 **[Download Latest iOS IPA](https://github.com/techforfriend/Nuvio-enhanced-2/releases/latest)**
+No IPA is published from this repository — its only workflow builds the Android APK (see below). The iOS app code is still in the tree, so an IPA can be built from source if needed.
 
 ---
 
 ## ✨ What Nuvio Enhanced Adds
 
-Everything listed below has been built and refined on top of upstream Nuvio Mobile:
+Everything listed below has been built and refined on top of upstream Nuvio Mobile, plus the custom work ported from techforfriend/Nuvio-enhanced-2:
 
 ### 🔌 Next-Gen Extensions & Providers Engine
 
@@ -110,10 +109,34 @@ Upstream Nuvio lacks Live TV support. Nuvio Enhanced integrates an entire IPTV s
 
 ---
 
+## ✨ What NuvioMobile-Infuse Adds on Top
+
+These are the custom changes in this repository, beyond the sections above:
+
+### 📖 Nuvio Read & Rating Map
+- **Nuvio Read toggle:** Show or hide the Nuvio Read overview card from Settings → Nuvio Enhanced.
+- **Rating Map arrow in Nuvio Read:** Tap the arrow in Nuvio Read to open the Rating Map, so ratings are easy to view. The standalone Rating Map section stays hidden while Nuvio Read is on.
+
+### 🎮 Player Buttons Layout
+- **Customisable bottom-left pill (default player):** Settings → Playback → Player, shown only when Legacy layout is OFF. 20 buttons (including Watch Party, PiP, Shuffle, Orientation and Cast) can be placed on the bar or behind the arrow, with Reset to Default. Buttons hidden via the Nuvio Enhanced hide toggles stay hidden in both groups, but keep their saved position so they return when the toggle is turned back on.
+- **Volume above 100% in red:** The boosted-volume indicator shows in red instead of orange, in both the default side bar and the legacy volume pill.
+- **Lock icon shows its state:** A closed lock when locked and an open lock when unlocked, in the default top toolbar, the legacy top header and the centre locked overlay.
+- **No duplicate Watch Party:** The legacy bottom-bar Watch Party option was removed; only the top PlayerHeader Watch Party remains.
+
+### 🛠️ Nuvio Enhanced Diagnostics
+- **Enhanced Diagnostics section:** Restored in Nuvio Enhanced settings, including Copy current diagnostics and Copy last crash report (backed by a global crash handler). The Sentry option was removed, since it gave no benefit in GitHub-built APKs (blank DSN).
+
+### ⬆️ Upstream Additions Included From Luqman's Enhanced Branch
+This fork is built on Luqman's enhanced branch, so it also includes his newer work that was merged in with this fork:
+- **Player Chapters:** Matroska chapter loading, a chapters panel and chapter navigation in the player.
+- **PublicMetaDb tracking:** PublicMetaDB as a tracking brand, library source and watch-progress source, alongside Trakt, SIMKL, MDBList, AniList and WeTrakr.
+
+---
+
 ## 🛠️ Build from Source
 
-### Android Build
-Requires Android Studio, JDK 17, and Cargo (for native seekbar Rust components):
+### Android Build (GitHub Actions, as used by this repository)
+This repository's only workflow is `build-apk.yml` (manual dispatch), which builds the release APK and publishes it to the v0.6.5 release. To build locally instead, use Android Studio, JDK 17, and Cargo (for native seekbar Rust components):
 ```bash
 # Add Rust Android targets (one-time setup):
 rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
@@ -142,6 +165,8 @@ env NUVIO_IOS_DISTRIBUTION=full xcodebuild \
 
 Nuvio is built by [NuvioMedia](https://github.com/NuvioMedia) — all credit for the app itself belongs to them and its
 contributors. This repository only adds to their work. If you enjoy Nuvio, [support the upstream project](https://nuvio.tv/support).
+
+This fork is based on [Luqman](https://github.com/luqmanfadlli)'s enhanced branch of NuvioMobile-Enhanced, with the custom work ported from [techforfriend/Nuvio-enhanced-2](https://github.com/techforfriend/Nuvio-enhanced-2).
 
 ## License
 

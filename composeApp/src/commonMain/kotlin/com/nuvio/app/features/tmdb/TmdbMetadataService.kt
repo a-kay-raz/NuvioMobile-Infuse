@@ -47,6 +47,12 @@ object TmdbMetadataService {
     private val backdropCacheMutex = Mutex()
     private val backdropRequests = Semaphore(4)
 
+    fun cachedOriginalTitle(tmdbId: String, type: String): String? {
+        val mediaType = TmdbService.normalizeMediaType(type)
+        val prefix = "$tmdbId:$mediaType:"
+        return enrichmentCache.entries.firstOrNull { it.key.startsWith(prefix) }?.value?.originalTitle
+    }
+
     suspend fun fetchLocalizedBackdrop(id: String, type: String, language: String): String? =
         withContext(Dispatchers.Default) {
             val mediaType = TmdbService.normalizeMediaType(type)
@@ -1036,7 +1042,14 @@ object TmdbMetadataService {
         val releaseInfo = details.releaseDate ?: details.firstAirDate
         val originalLanguage = details.originalLanguage?.trim()?.lowercase()?.takeIf(String::isNotBlank)
         val originalArtworkLanguage = originalLanguage.takeIf { useOriginalTitle }
-        val localizedTitle = listOf(details.title, details.name).firstNotNullOfOrNull { it?.trim()?.takeIf(String::isNotBlank) }
+        val localizedTitle = buildList {
+            if (useOriginalTitle) {
+                add(details.originalTitle)
+                add(details.originalName)
+            }
+            add(details.title)
+            add(details.name)
+        }.firstNotNullOfOrNull { it?.trim()?.takeIf(String::isNotBlank) }
         val people = buildPeople(
             details = details,
             credits = credits,
@@ -1062,6 +1075,7 @@ object TmdbMetadataService {
             ?.takeIf { mediaType == "tv" }
         val enrichment = TmdbEnrichment(
             localizedTitle = localizedTitle,
+            originalTitle = details.originalTitle ?: details.originalName,
             description = description,
             genres = genres,
             backdrop = buildImageUrl(
@@ -1490,6 +1504,7 @@ internal data class TmdbEnrichment(
     val collectionItems: List<MetaPreview> = emptyList(),
     val moreLikeThis: List<MetaPreview> = emptyList(),
     val trailers: List<MetaTrailer> = emptyList(),
+    val originalTitle: String? = null,
 ) {
     fun hasContent(): Boolean =
         localizedTitle != null ||
@@ -1912,6 +1927,8 @@ private data class TmdbDetailsResponse(
     @SerialName("production_countries") val productionCountries: List<TmdbProductionCountry> = emptyList(),
     @SerialName("origin_country") val originCountry: List<String> = emptyList(),
     @SerialName("original_language") val originalLanguage: String? = null,
+    @SerialName("original_title") val originalTitle: String? = null,
+    @SerialName("original_name") val originalName: String? = null,
     @SerialName("poster_path") val posterPath: String? = null,
     @SerialName("backdrop_path") val backdropPath: String? = null,
     @SerialName("created_by") val createdBy: List<TmdbCreator> = emptyList(),

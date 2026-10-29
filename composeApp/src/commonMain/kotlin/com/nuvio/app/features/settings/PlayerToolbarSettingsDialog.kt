@@ -20,9 +20,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,31 +68,6 @@ internal fun PlayerToolbarSettingsDialog(
     onLayoutChange: (PlayerToolbarLayout) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Buttons hidden by Nuvio Enhanced "Hide player buttons" toggles are not
-    // listed at all: they are gone from the player, so showing them here
-    // would lie about what the layout controls. This is display-only: the
-    // layout keeps their saved position, so turning the toggle back on
-    // brings them back exactly where they were.
-    val enhancedSettings by remember {
-        NuvioEnhancedSettingsRepository.ensureLoaded()
-        NuvioEnhancedSettingsRepository.uiState
-    }.collectAsStateWithLifecycle()
-    val hiddenByEnhanced = buildSet {
-        if (enhancedSettings.hidePlayerWatchParty) add(PlayerToolbarButton.WATCH_PARTY)
-        if (enhancedSettings.hidePlayerPip) add(PlayerToolbarButton.PICTURE_IN_PICTURE)
-        if (enhancedSettings.hidePlayerSpeed) add(PlayerToolbarButton.SPEED)
-        if (enhancedSettings.hidePlayerResizeMode) add(PlayerToolbarButton.RESIZE)
-        if (enhancedSettings.hidePlayerEngineSwitch) add(PlayerToolbarButton.SWITCH_ENGINE)
-        if (enhancedSettings.hidePlayerShuffle) add(PlayerToolbarButton.SHUFFLE)
-        if (enhancedSettings.hidePlayerOrientation) add(PlayerToolbarButton.ORIENTATION)
-        if (enhancedSettings.hidePlayerCast) add(PlayerToolbarButton.CAST)
-        if (enhancedSettings.hidePlayerRating) add(PlayerToolbarButton.RATE)
-        if (enhancedSettings.hidePlayerExternalPlayer) add(PlayerToolbarButton.EXTERNAL_PLAYER)
-        if (enhancedSettings.hidePlayerInfo) add(PlayerToolbarButton.PLAYBACK_INFO)
-        if (enhancedSettings.hidePlayerVideoSettings) add(PlayerToolbarButton.VIDEO_SETTINGS)
-        if (enhancedSettings.hidePlayerSubmitIntro) add(PlayerToolbarButton.SUBMIT_INTRO)
-    }
-
     DialogSurface(
         onDismissRequest = onDismiss,
         title = stringResource(Res.string.settings_playback_toolbar_layout),
@@ -112,7 +84,6 @@ internal fun PlayerToolbarSettingsDialog(
                 title = stringResource(Res.string.settings_playback_toolbar_shown),
                 visible = true,
                 layout = layout,
-                hiddenButtons = hiddenByEnhanced,
                 onLayoutChange = onLayoutChange,
             )
 
@@ -120,7 +91,6 @@ internal fun PlayerToolbarSettingsDialog(
                 title = stringResource(Res.string.settings_playback_toolbar_hidden),
                 visible = false,
                 layout = layout,
-                hiddenButtons = hiddenByEnhanced,
                 onLayoutChange = onLayoutChange,
             )
         }
@@ -144,7 +114,6 @@ private fun ToolbarGroup(
     title: String,
     visible: Boolean,
     layout: PlayerToolbarLayout,
-    hiddenButtons: Set<PlayerToolbarButton>,
     onLayoutChange: (PlayerToolbarLayout) -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -156,7 +125,7 @@ private fun ToolbarGroup(
     )
 
     val groupIndices = layout.entries.indices.filter {
-        layout.entries[it].visible == visible && layout.entries[it].button !in hiddenButtons
+        layout.entries[it].visible == visible
     }
     if (groupIndices.isEmpty()) {
         Text(

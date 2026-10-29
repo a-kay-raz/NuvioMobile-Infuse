@@ -70,7 +70,6 @@ import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nuvio.app.features.settings.NuvioEnhancedSettingsRepository
 
 internal fun playerOrientationToggleIcon(isPortraitPlayback: Boolean): ImageVector =
     if (isPortraitPlayback) Icons.Rounded.StayCurrentLandscape else Icons.Rounded.StayCurrentPortrait
@@ -87,34 +86,25 @@ internal fun PlayerToolbar(
 ) {
     // Top actions moved to the bottom actions pill, except lock, which is
     // reverted to its original top position, in its glass capsule, before back.
-    // hidePlayerLock hides only this capsule; back stays, and the centre
-    // locked overlay still unlocks, so hiding it can never trap the player
-    // in a locked state.
-    val enhancedSettings by remember {
-        NuvioEnhancedSettingsRepository.ensureLoaded()
-        NuvioEnhancedSettingsRepository.uiState
-    }.collectAsStateWithLifecycle()
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Spacer(Modifier.weight(1f))
-        if (!enhancedSettings.hidePlayerLock) {
-            Row(
-                modifier = Modifier.playerLiquidGlass(
-                    shape = PlayerGlassCapsule,
-                    refractionHeight = 8.dp,
-                    refractionAmount = 12.dp,
+        Row(
+            modifier = Modifier.playerLiquidGlass(
+                shape = PlayerGlassCapsule,
+                refractionHeight = 8.dp,
+                refractionAmount = 12.dp,
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PlayerAction(
+                description = stringResource(
+                    if (isLocked) Res.string.compose_player_unlock_controls else Res.string.compose_player_lock_controls,
                 ),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                PlayerAction(
-                    description = stringResource(
-                        if (isLocked) Res.string.compose_player_unlock_controls else Res.string.compose_player_lock_controls,
-                    ),
-                    icon = if (isLocked) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
-                    onClick = onLockToggle,
-                )
-            }
-            Spacer(Modifier.width(8.dp))
+                icon = if (isLocked) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
+                onClick = onLockToggle,
+            )
         }
+        Spacer(Modifier.width(8.dp))
         NuvioBackButton(
             onClick = onBack,
             modifier = Modifier.playerLiquidGlass(CircleShape, refractionHeight = 8.dp, refractionAmount = 12.dp),
@@ -172,10 +162,6 @@ internal fun PlayerControlActions(
     onRandomNextEpisodeModeToggle: (() -> Unit)? = null,
     onInteraction: () -> Unit,
 ) {
-    val enhancedSettings by remember {
-        NuvioEnhancedSettingsRepository.ensureLoaded()
-        NuvioEnhancedSettingsRepository.uiState
-    }.collectAsStateWithLifecycle()
 
     val playerSettings by remember {
         PlayerSettingsRepository.ensureLoaded()
@@ -184,18 +170,16 @@ internal fun PlayerControlActions(
 
     // Keyed by toolbar button so the user's "Player buttons" layout (Settings
     // -> Playback -> Player, default player only) decides the bar order, which
-    // buttons stay on the bar, and which sit behind the arrow. Enhanced
-    // "Hide player buttons" toggles still filter first: a toggled-off button
-    // never appears, whatever the layout says.
+    // buttons stay on the bar, and which sit behind the arrow.
     val availableActions = listOfNotNull(
-        onPartyClick?.takeIf { !enhancedSettings.hidePlayerWatchParty }?.let {
+        onPartyClick?.let {
             PlayerToolbarButton.WATCH_PARTY to PlayerControlAction(
                 stringResource(Res.string.party_title), it,
                 icon = Icons.Rounded.Groups,
                 tint = if (partyActive) MaterialTheme.colorScheme.primary else Color.White,
             )
         },
-        onPictureInPictureClick?.takeIf { !enhancedSettings.hidePlayerPip }?.let {
+        onPictureInPictureClick?.let {
             PlayerToolbarButton.PICTURE_IN_PICTURE to PlayerControlAction(
                 stringResource(Res.string.compose_player_picture_in_picture), it,
                 icon = Icons.Rounded.PictureInPictureAlt,
@@ -221,26 +205,22 @@ internal fun PlayerControlActions(
                 icon = Icons.Rounded.SkipNext, iconSize = 40.dp,
             )
         },
-        if (!enhancedSettings.hidePlayerSpeed) {
-            PlayerToolbarButton.SPEED to PlayerControlAction(
-                "${stringResource(Res.string.compose_player_speed)} ${formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed)}",
-                onSpeedClick, icon = Icons.Rounded.Speed,
-                popup = {
-                    PlayerSpeedPopup(
-                        visible = speedPickerVisible,
-                        currentSpeed = playbackSnapshot.playbackSpeed,
-                        onSpeedSelected = onSpeedSelected,
-                        onDismiss = onSpeedPickerDismiss,
-                    )
-                },
-            )
-        } else null,
-        if (!enhancedSettings.hidePlayerResizeMode) {
-            PlayerToolbarButton.RESIZE to PlayerControlAction(
-                stringResource(resizeMode.labelRes), onResizeModeClick,
-                painter = appIconPainter(AppIconResource.PlayerAspectRatio),
-            )
-        } else null,
+        PlayerToolbarButton.SPEED to PlayerControlAction(
+            "${stringResource(Res.string.compose_player_speed)} ${formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed)}",
+            onSpeedClick, icon = Icons.Rounded.Speed,
+            popup = {
+                PlayerSpeedPopup(
+                    visible = speedPickerVisible,
+                    currentSpeed = playbackSnapshot.playbackSpeed,
+                    onSpeedSelected = onSpeedSelected,
+                    onDismiss = onSpeedPickerDismiss,
+                )
+            },
+        ),
+        PlayerToolbarButton.RESIZE to PlayerControlAction(
+            stringResource(resizeMode.labelRes), onResizeModeClick,
+            painter = appIconPainter(AppIconResource.PlayerAspectRatio),
+        ),
         onChaptersClick?.let {
             PlayerToolbarButton.CHAPTERS to PlayerControlAction(
                 stringResource(Res.string.player_chapters), it,
@@ -257,13 +237,13 @@ internal fun PlayerControlActions(
                 tint = if (nightModeEnabled) MaterialTheme.colorScheme.primary else Color.White,
             )
         },
-        onSwitchEngineClick?.takeIf { !enhancedSettings.hidePlayerEngineSwitch }?.let {
+        onSwitchEngineClick?.let {
             PlayerToolbarButton.SWITCH_ENGINE to PlayerControlAction(
                 stringResource(Res.string.cd_switch_player_engine), it,
                 icon = Icons.Rounded.SwapHoriz,
             )
         },
-        onRandomNextEpisodeModeToggle?.takeIf { !enhancedSettings.hidePlayerShuffle }?.let {
+        onRandomNextEpisodeModeToggle?.let {
             PlayerToolbarButton.SHUFFLE to PlayerControlAction(
                 if (randomNextEpisodeMode) stringResource(Res.string.player_random_next_enabled)
                 else stringResource(Res.string.player_random_next_disabled), it,
@@ -271,13 +251,13 @@ internal fun PlayerControlActions(
                 tint = if (randomNextEpisodeMode) MaterialTheme.colorScheme.primary else Color.White,
             )
         },
-        onOrientationToggleClick?.takeIf { !enhancedSettings.hidePlayerOrientation }?.let {
+        onOrientationToggleClick?.let {
             PlayerToolbarButton.ORIENTATION to PlayerControlAction(
                 stringResource(playerOrientationToggleLabel(isPortraitPlayback)), it,
                 icon = playerOrientationToggleIcon(isPortraitPlayback),
             )
         },
-        onCastClick?.takeIf { !enhancedSettings.hidePlayerCast }?.let {
+        onCastClick?.let {
             PlayerToolbarButton.CAST to PlayerControlAction(
                 stringResource(Res.string.player_cast), it,
                 icon = if (isCasting) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
@@ -295,7 +275,7 @@ internal fun PlayerControlActions(
                 painter = appIconPainter(AppIconResource.PlayerEpisodes),
             )
         },
-        onRateClick?.takeIf { !enhancedSettings.hidePlayerRating }?.let {
+        onRateClick?.let {
             PlayerToolbarButton.RATE to PlayerControlAction(
                 userRating?.let { rating -> stringResource(Res.string.user_rating_action_rated, rating) }
                     ?: stringResource(Res.string.user_rating_action_rate),
@@ -303,25 +283,25 @@ internal fun PlayerControlActions(
                 icon = if (userRating != null) Icons.Rounded.Star else Icons.Rounded.StarBorder,
             )
         },
-        onOpenInExternalPlayer?.takeIf { !enhancedSettings.hidePlayerExternalPlayer }?.let {
+        onOpenInExternalPlayer?.let {
             PlayerToolbarButton.EXTERNAL_PLAYER to PlayerControlAction(
                 stringResource(Res.string.streams_open_external_player), it,
                 icon = Icons.AutoMirrored.Rounded.OpenInNew,
             )
         },
-        onInfoClick?.takeIf { !enhancedSettings.hidePlayerInfo }?.let {
+        onInfoClick?.let {
             PlayerToolbarButton.PLAYBACK_INFO to PlayerControlAction(
                 stringResource(Res.string.compose_player_playback_info), it,
                 icon = Icons.Rounded.Info,
             )
         },
-        onVideoSettingsClick?.takeIf { !enhancedSettings.hidePlayerVideoSettings }?.let {
+        onVideoSettingsClick?.let {
             PlayerToolbarButton.VIDEO_SETTINGS to PlayerControlAction(
                 stringResource(Res.string.player_action_video_settings), it,
                 icon = Icons.Rounded.Build,
             )
         },
-        onSubmitIntroClick?.takeIf { !enhancedSettings.hidePlayerSubmitIntro }?.let {
+        onSubmitIntroClick?.let {
             PlayerToolbarButton.SUBMIT_INTRO to PlayerControlAction(
                 stringResource(Res.string.submit_intro_action), it,
                 icon = Icons.Rounded.Flag,

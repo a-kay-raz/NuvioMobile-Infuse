@@ -660,7 +660,7 @@ private fun PlayerHeader(
                         key(button) {
                             when (button) {
                                 LegacyTopButton.SUBMIT_INTRO -> {
-                                    if (onSubmitIntroClick != null && !enhancedSettings.hidePlayerSubmitIntro) {
+                                    if (onSubmitIntroClick != null) {
                                         PlayerHeaderIconButton(
                                             icon = Icons.Rounded.Flag,
                                             contentDescription = stringResource(Res.string.submit_intro_action),
@@ -671,7 +671,7 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.EXTERNAL_PLAYER -> {
-                                    if (onOpenInExternalPlayer != null && !enhancedSettings.hidePlayerExternalPlayer) {
+                                    if (onOpenInExternalPlayer != null) {
                                         PlayerHeaderIconButton(
                                             icon = Icons.AutoMirrored.Rounded.OpenInNew,
                                             contentDescription = stringResource(Res.string.streams_open_external_player),
@@ -682,7 +682,7 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.SWITCH_ENGINE -> {
-                                    if (onSwitchEngineClick != null && !enhancedSettings.hidePlayerEngineSwitch) {
+                                    if (onSwitchEngineClick != null) {
                                         PlayerHeaderIconButton(
                                             icon = Icons.Rounded.SwapHoriz,
                                             contentDescription = stringResource(Res.string.cd_switch_player_engine),
@@ -693,7 +693,7 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.PARTY -> {
-                                    if (onPartyClick != null && !enhancedSettings.hidePlayerWatchParty) {
+                                    if (onPartyClick != null) {
                                         PlayerHeaderIconButton(
                                             icon = Icons.Rounded.Groups,
                                             contentDescription = stringResource(Res.string.party_title),
@@ -705,7 +705,7 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.CAST -> {
-                                    if (onCastClick != null && !enhancedSettings.hidePlayerCast) {
+                                    if (onCastClick != null) {
                                         PlayerHeaderIconButton(
                                             icon = if (isCasting) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
                                             contentDescription = stringResource(Res.string.player_cast),
@@ -716,7 +716,7 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.PICTURE_IN_PICTURE -> {
-                                    if (onPictureInPictureClick != null && !enhancedSettings.hidePlayerPip) {
+                                    if (onPictureInPictureClick != null) {
                                         PlayerHeaderIconButton(
                                             icon = Icons.Rounded.PictureInPictureAlt,
                                             contentDescription = stringResource(Res.string.compose_player_picture_in_picture),
@@ -727,7 +727,7 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.ORIENTATION -> {
-                                    if (onOrientationToggleClick != null && !enhancedSettings.hidePlayerOrientation) {
+                                    if (onOrientationToggleClick != null) {
                                         PlayerHeaderIconButton(
                                             icon = playerOrientationToggleIcon(isPortraitPlayback),
                                             contentDescription = stringResource(playerOrientationToggleLabel(isPortraitPlayback)),
@@ -738,7 +738,7 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.RATE -> {
-                                    if (onRateClick != null && !enhancedSettings.hidePlayerRating) {
+                                    if (onRateClick != null) {
                                         PlayerHeaderIconButton(
                                             icon = if (userRating != null) Icons.Rounded.Star else Icons.Rounded.StarBorder,
                                             contentDescription = userRating?.let {
@@ -751,7 +751,7 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.PLAYBACK_INFO -> {
-                                    if (onInfoClick != null && !enhancedSettings.hidePlayerInfo) {
+                                    if (onInfoClick != null) {
                                         PlayerHeaderIconButton(
                                             icon = Icons.Rounded.Info,
                                             contentDescription = stringResource(Res.string.compose_player_playback_info),
@@ -762,7 +762,7 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.VIDEO_SETTINGS -> {
-                                    if (onVideoSettingsClick != null && !enhancedSettings.hidePlayerVideoSettings) {
+                                    if (onVideoSettingsClick != null) {
                                         PlayerHeaderIconButton(
                                             icon = Icons.Rounded.Build,
                                             contentDescription = stringResource(Res.string.player_action_video_settings),
@@ -773,24 +773,22 @@ private fun PlayerHeader(
                                     }
                                 }
                                 LegacyTopButton.LOCK -> {
-                                    if (!enhancedSettings.hidePlayerLock) {
-                                        PlayerHeaderIconButton(
-                                            icon = if (isLocked) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
-                                            contentDescription = if (isLocked) {
-                                                stringResource(Res.string.compose_player_unlock_controls)
-                                            } else {
-                                                stringResource(Res.string.compose_player_lock_controls)
-                                            },
-                                            buttonSize = metrics.headerIconSize + 16.dp,
-                                            iconSize = metrics.headerIconSize,
-                                            onClick = onLockToggle,
-                                        )
-                                    }
+                                    PlayerHeaderIconButton(
+                                        icon = if (isLocked) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
+                                        contentDescription = if (isLocked) {
+                                            stringResource(Res.string.compose_player_unlock_controls)
+                                        } else {
+                                            stringResource(Res.string.compose_player_lock_controls)
+                                        },
+                                        buttonSize = metrics.headerIconSize + 16.dp,
+                                        iconSize = metrics.headerIconSize,
+                                        onClick = onLockToggle,
+                                    )
                                 }
                             }
                         }
                     }
-                    if (onRandomNextEpisodeModeToggle != null && !enhancedSettings.hidePlayerShuffle) {
+                    if (onRandomNextEpisodeModeToggle != null) {
                         PlayerHeaderIconButton(
                             icon = Icons.Rounded.Shuffle,
                             contentDescription = if (randomNextEpisodeMode) {
@@ -1020,10 +1018,6 @@ private fun ProgressControls(
     val subtitlesPainter = appIconPainter(AppIconResource.PlayerSubtitles)
     val audioPainter = appIconPainter(AppIconResource.PlayerAudioFilled)
     val sourcesPainter = appIconPainter(AppIconResource.PlayerSource)
-    val enhancedSettings by remember {
-        NuvioEnhancedSettingsRepository.ensureLoaded()
-        NuvioEnhancedSettingsRepository.uiState
-    }.collectAsStateWithLifecycle()
 
     Column(modifier = modifier) {
         Row(
@@ -1117,7 +1111,7 @@ private fun ProgressControls(
                                         )
                                     }
                                     LegacyBottomButton.SPEED -> {
-                                        if (onSpeedClick != null && !enhancedSettings.hidePlayerSpeed) {
+                                        if (onSpeedClick != null) {
                                             Box {
                                                 PlayerActionPillButton(
                                                     label = formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed),

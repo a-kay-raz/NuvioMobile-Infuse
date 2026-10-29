@@ -55,6 +55,7 @@ internal val PlayerToolbarButton.labelRes: StringResource
         PlayerToolbarButton.SHUFFLE -> Res.string.player_toolbar_button_shuffle
         PlayerToolbarButton.ORIENTATION -> Res.string.player_toolbar_button_orientation
         PlayerToolbarButton.CAST -> Res.string.player_cast
+        PlayerToolbarButton.NIGHT_MODE -> Res.string.player_night_mode
         PlayerToolbarButton.SOURCES -> Res.string.compose_player_sources
         PlayerToolbarButton.EPISODES -> Res.string.compose_player_episodes
         PlayerToolbarButton.RATE -> Res.string.user_rating_action_rate

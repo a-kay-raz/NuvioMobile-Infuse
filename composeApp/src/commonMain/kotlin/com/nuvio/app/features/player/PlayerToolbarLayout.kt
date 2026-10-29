@@ -28,6 +28,7 @@ enum class PlayerToolbarButton(val storageId: String) {
     SHUFFLE("shuffle"),
     ORIENTATION("orientation"),
     CAST("cast"),
+    NIGHT_MODE("night_mode"),
     SOURCES("sources"),
     EPISODES("episodes"),
     RATE("rate"),
@@ -85,6 +86,7 @@ data class PlayerToolbarLayout(val entries: List<PlayerToolbarEntry>) {
                 PlayerToolbarButton.SHUFFLE,
                 PlayerToolbarButton.ORIENTATION,
                 PlayerToolbarButton.CAST,
+                PlayerToolbarButton.NIGHT_MODE,
             ).map { PlayerToolbarEntry(it, visible = true) } +
                 listOf(
                     PlayerToolbarButton.SOURCES,

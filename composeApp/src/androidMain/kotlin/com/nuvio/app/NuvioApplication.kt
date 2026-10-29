@@ -33,7 +33,6 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
         // > Diagnostics can show them. Without this, no report is saved.
         CrashDiagnostics.initialize(this)
         DnsPlatform.initialize(this)
-        com.nuvio.app.features.updater.AndroidAppUpdaterPlatform.initialize(this)
         com.nuvio.app.features.settings.NuvioEnhancedSettingsStorage.initialize(this)
         com.nuvio.app.features.cloudstream.CloudStreamPlatformStorage.initialize(this)
         com.nuvio.app.features.cloudstream.CloudStreamPlatformRuntime.initialize(this)

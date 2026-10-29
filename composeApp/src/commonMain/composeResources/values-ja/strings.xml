@@ -443,8 +443,6 @@
     <string name="compose_settings_root_advanced_description">起動時とプロフィールの動作</string>
     <string name="compose_settings_root_advanced_section">詳細設定</string>
     <string name="compose_settings_root_appearance_description">ホーム構成とポスタースタイル</string>
-    <string name="compose_settings_root_check_updates_description">最新リリースをダウンロード</string>
-    <string name="compose_settings_root_check_updates_title">アップデートを確認</string>
     <string name="compose_settings_root_content_discovery_description">アドオンと探索ソースを管理</string>
     <string name="compose_settings_root_content_discovery_description_appstore">アドオンを管理して、Nuvioに表示する内容を選べます。</string>
     <string name="compose_settings_root_downloads_description">ダウンロードした映画とエピソードを管理</string>
@@ -1328,24 +1326,6 @@
     <string name="trailer_unable_to_play">予告編を再生できません</string>
     <string name="trakt_lists_load_failed">Traktリストの読み込みに失敗しました</string>
     <string name="trakt_lists_update_failed">Traktリストの更新に失敗しました</string>
-    <string name="updates_asset_line">%1$s • %2$s</string>
-    <string name="updates_check_failed">アップデートの確認に失敗しました</string>
-    <string name="updates_download_failed">ダウンロードに失敗しました</string>
-    <string name="updates_download_empty_body">ダウンロードボディが空です</string>
-    <string name="updates_download_file_missing">ダウンロードした更新ファイルが見つかりません。</string>
-    <string name="updates_downloading_progress">ダウンロード中 %1$d%</string>
-    <string name="updates_install_failed">インストールを開始できません</string>
-    <string name="updates_latest_version">最新バージョンを使用しています。</string>
-    <string name="updates_message_allow_installs">Nuvioのアプリインストールを有効にして、戻って続けてください。</string>
-    <string name="updates_message_downloading">アップデートをダウンロード中...</string>
-    <string name="updates_message_no_updates">アップデートが見つかりません。</string>
-    <string name="updates_message_ready">新しいバージョンをインストールする準備ができました。</string>
-    <string name="updates_not_available">このビルドではアプリ内アップデートが利用できません。</string>
-    <string name="updates_preparing_download">ダウンロードを準備中</string>
-    <string name="updates_release_notes">リリースノート</string>
-    <string name="updates_title_allow_installs">インストールを許可して続ける</string>
-    <string name="updates_title_available">アップデートが利用可能</string>
-    <string name="updates_title_status">アップデートの状況</string>
     <string name="addon_already_installed">そのアドオンはすでにインストールされています。</string>
     <string name="addon_invalid_url">有効なアドオンURLを入力してください</string>
     <string name="addon_load_manifest_failed">マニフェストを読み込めませんでした</string>
@@ -1863,13 +1843,6 @@
     <string name="trakt_connected_status">Traktに連携しました</string>
     <string name="trakt_disconnected_status">Traktの連携を解除しました</string>
     <string name="unit_bytes_tb">TB</string>
-    <string name="updates_apk_asset_missing">リリースにAPKアセットが見つかりません</string>
-    <string name="updates_download_failed_http">ダウンロードが HTTP %1$d で失敗しました</string>
-    <string name="updates_downloaded_file_missing">ダウンロードした更新ファイルが見つかりません。</string>
-    <string name="updates_empty_download_body">ダウンロードボディが空です</string>
-    <string name="updates_github_api_error">GitHub releases APIエラー：%1$d</string>
-    <string name="updates_no_channel_release">まだアップデートが公開されていません。</string>
-    <string name="updates_release_missing_title">リリースにタグまたは名前がありません</string>
     <!-- Continue Watching air date display -->
     <string name="cw_airs_date">%1$s に放送</string>
     <string name="cw_airs_today">本日放送</string>

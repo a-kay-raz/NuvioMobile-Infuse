@@ -17,7 +17,6 @@ import com.nuvio.app.features.streams.StreamAutoPlayMode
 import com.nuvio.app.features.streams.StreamLaunch
 import com.nuvio.app.features.streams.StreamLaunchStore
 import com.nuvio.app.features.streams.StreamsRepository
-import com.nuvio.app.features.updater.AndroidAppUpdaterPlatform
 import com.nuvio.app.navigation.StreamRoute
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -56,7 +55,6 @@ class StreamOrientationTest {
         PlayerSettingsStorage.initialize(context)
         AddonStorage.initialize(context)
         BingeGroupCacheStorage.initialize(context)
-        AndroidAppUpdaterPlatform.initialize(context)
         PlayerSettingsRepository.clearLocalState()
         AddonRepository.clearLocalState()
         MetaDetailsRepository.clear()

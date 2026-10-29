@@ -183,9 +183,6 @@ import com.nuvio.app.features.tracking.TrackingLibraryTab
 import com.nuvio.app.features.tracking.TrackingMembershipApplyResult
 import com.nuvio.app.features.tracking.TrackingProviderId
 import com.nuvio.app.features.tracking.toggleTrackingLibraryMembership
-import com.nuvio.app.features.updater.AppUpdaterHost
-import com.nuvio.app.features.updater.AppUpdaterPlatform
-import com.nuvio.app.features.updater.rememberAppUpdaterController
 import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.features.watching.application.WatchingActions
 import com.nuvio.app.features.watching.application.WatchingState
@@ -252,7 +249,6 @@ internal fun MainAppContent(
                 onLocalPop = if (posterNavigationEnabled) posterNavigation::clear else null,
             )
         }
-        val appUpdaterController = rememberAppUpdaterController()
         if (ownsAppRuntime) {
             remember {
                 EpisodeReleaseNotificationsRepository.ensureLoaded()
@@ -1535,10 +1531,6 @@ internal fun MainAppContent(
             }
         }
 
-        AppUpdaterHost(
-            controller = appUpdaterController,
-            modifier = Modifier.fillMaxSize(),
-        ) {
             val nativeTabBarOwnsChrome = useNativeNavigation && useNativeTabBar
             val settingsRouteBarVisible = currentRoute is SettingsDestinationRoute && !nativeTabBarOwnsChrome
             val settingsRouteBarBackdrop = rememberNuvioBackdrop()
@@ -1724,23 +1716,6 @@ internal fun MainAppContent(
                                 onWhatsNewSettingsClick = {
                                     navController.navigate(WhatsNewSettingsRoute(whatsNewSettingsTitle))
                                 },
-                                onCheckForUpdatesClick = if (AppFeaturePolicy.inAppUpdaterEnabled) {
-                                    {
-                                        appUpdaterController.checkForUpdates(
-                                            force = true,
-                                            showNoUpdateFeedback = true,
-                                        )
-                                    }
-                                } else {
-                                    null
-                                },
-                                onTestUpdateBannerClick = if (
-                                    AppFeaturePolicy.inAppUpdaterEnabled && AppUpdaterPlatform.isDebugBuild
-                                ) {
-                                    appUpdaterController::showDebugTestUpdate
-                                } else {
-                                    null
-                                },
                                 onCollectionsSettingsClick = { navController.navigate(CollectionsRoute(collectionsTitle)) },
                                 onWatchPartySettingsClick = { navController.navigate(PartyRoute(title = watchPartyTitle)) },
                                 onFolderClick = { collectionId, folderId ->
@@ -1881,12 +1856,6 @@ internal fun MainAppContent(
                         navController = navController,
                         useNativeNavigation = useNativeNavigation,
                         collectionsTitle = collectionsTitle,
-                        onCheckForUpdates = if (AppFeaturePolicy.inAppUpdaterEnabled) {
-                            { appUpdaterController.checkForUpdates(force = true, showNoUpdateFeedback = true) }
-                        } else null,
-                        onTestUpdateBanner = if (
-                            AppFeaturePolicy.inAppUpdaterEnabled && AppUpdaterPlatform.isDebugBuild
-                        ) appUpdaterController::showDebugTestUpdate else null,
                         onSwitchProfile = onSwitchProfile,
                         onEditProfile = pushEditProfile,
                     )
@@ -2433,7 +2402,6 @@ internal fun MainAppContent(
             )
 
             }
-        }
 }
 
 private fun AppRoute?.drawsUnderVerticalBar(selectedTab: AppScreenTab): Boolean =

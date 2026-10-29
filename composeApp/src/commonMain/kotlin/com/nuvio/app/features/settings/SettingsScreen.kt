@@ -154,8 +154,6 @@ fun SettingsScreen(
     onSupportersContributorsClick: () -> Unit = {},
     onLicensesAttributionsClick: () -> Unit = {},
     onWhatsNewClick: () -> Unit = {},
-    onCheckForUpdatesClick: (() -> Unit)? = null,
-    onTestUpdateBannerClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
     onWatchPartyClick: () -> Unit = {},
 ) {
@@ -486,8 +484,6 @@ fun SettingsScreen(
                         onSupportersContributorsClick = openSupportersContributors,
                         onLicensesAttributionsClick = openLicensesAttributions,
                         onWhatsNewClick = openWhatsNew,
-                        onCheckForUpdatesClick = onCheckForUpdatesClick,
-                        onTestUpdateBannerClick = onTestUpdateBannerClick,
                         onCollectionsClick = onCollectionsClick,
                         onWatchPartyClick = onWatchPartyClick,
                     )
@@ -572,8 +568,6 @@ fun SettingsScreen(
                         onSupportersContributorsClick = openSupportersContributors,
                         onLicensesAttributionsClick = openLicensesAttributions,
                         onWhatsNewClick = openWhatsNew,
-                        onCheckForUpdatesClick = onCheckForUpdatesClick,
-                        onTestUpdateBannerClick = onTestUpdateBannerClick,
                         onCollectionsClick = onCollectionsClick,
                         onWatchPartyClick = onWatchPartyClick,
                     )
@@ -664,8 +658,6 @@ private fun MobileSettingsScreen(
     onSupportersContributorsClick: () -> Unit = {},
     onLicensesAttributionsClick: () -> Unit = {},
     onWhatsNewClick: () -> Unit = {},
-    onCheckForUpdatesClick: (() -> Unit)? = null,
-    onTestUpdateBannerClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
     onWatchPartyClick: () -> Unit = {},
 ) {
@@ -721,7 +713,6 @@ private fun MobileSettingsScreen(
                 }
                 SettingsSearchTarget.Collections -> onCollectionsClick()
                 SettingsSearchTarget.SwitchProfile -> onSwitchProfile?.invoke()
-                SettingsSearchTarget.CheckForUpdates -> onCheckForUpdatesClick?.invoke()
             }
         }
 
@@ -773,7 +764,6 @@ private fun MobileSettingsScreen(
                                 personalMediaAddonCopyEnabled = AppFeaturePolicy.personalMediaAddonCopyEnabled,
                                 liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
                                 switchProfileAvailable = onSwitchProfile != null,
-                                checkForUpdatesAvailable = onCheckForUpdatesClick != null,
                             )
                         },
                         isTablet = false,
@@ -796,8 +786,6 @@ private fun MobileSettingsScreen(
                             onSupportersContributorsClick = onSupportersContributorsClick,
                             onLicensesAttributionsClick = onLicensesAttributionsClick,
                             onWhatsNewClick = onWhatsNewClick,
-                            onCheckForUpdatesClick = onCheckForUpdatesClick,
-                            onTestUpdateBannerClick = onTestUpdateBannerClick,
                             onAccountClick = onAccountClick,
                             onSwitchProfileClick = if (onSwitchProfile != null) {
                                 { onPageChange(SettingsPage.Profile) }
@@ -1115,8 +1103,6 @@ private fun TabletSettingsScreen(
     onSupportersContributorsClick: () -> Unit = {},
     onLicensesAttributionsClick: () -> Unit = {},
     onWhatsNewClick: () -> Unit = {},
-    onCheckForUpdatesClick: (() -> Unit)? = null,
-    onTestUpdateBannerClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
     onWatchPartyClick: () -> Unit = {},
 ) {
@@ -1197,7 +1183,6 @@ private fun TabletSettingsScreen(
                     }
                     SettingsSearchTarget.Collections -> onCollectionsClick()
                     SettingsSearchTarget.SwitchProfile -> onSwitchProfile?.invoke()
-                    SettingsSearchTarget.CheckForUpdates -> onCheckForUpdatesClick?.invoke()
                 }
             }
 
@@ -1276,7 +1261,6 @@ private fun TabletSettingsScreen(
                                     personalMediaAddonCopyEnabled = AppFeaturePolicy.personalMediaAddonCopyEnabled,
                                     liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
                                     switchProfileAvailable = onSwitchProfile != null,
-                                    checkForUpdatesAvailable = onCheckForUpdatesClick != null,
                                 )
                             },
                             isTablet = true,
@@ -1299,8 +1283,6 @@ private fun TabletSettingsScreen(
                                 onSupportersContributorsClick = { openInlinePage(SettingsPage.SupportersContributors) },
                                 onLicensesAttributionsClick = { openInlinePage(SettingsPage.LicensesAttributions) },
                                 onWhatsNewClick = { openInlinePage(SettingsPage.WhatsNew) },
-                                onCheckForUpdatesClick = onCheckForUpdatesClick,
-                                onTestUpdateBannerClick = onTestUpdateBannerClick,
                                 onAccountClick = { openInlinePage(SettingsPage.Account) },
                                 onSwitchProfileClick = if (onSwitchProfile != null) {
                                     { openInlinePage(SettingsPage.Profile) }

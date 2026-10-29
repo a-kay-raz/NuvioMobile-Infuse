@@ -435,8 +435,6 @@
     <string name="compose_settings_root_advanced_description">Comportement au démarrage et des profils.</string>
     <string name="compose_settings_root_advanced_section">AVANCÉ</string>
     <string name="compose_settings_root_appearance_description">Ajustez la présentation de l’accueil et les préférences visuelles.</string>
-    <string name="compose_settings_root_check_updates_description">Rechercher de nouvelles versions de l’application.</string>
-    <string name="compose_settings_root_check_updates_title">Vérifier les mises à jour</string>
     <string name="compose_settings_root_content_discovery_description">Gérez les addons et sources de découverte.</string>
     <string name="compose_settings_root_content_discovery_description_appstore">Gérez vos addons et choisissez ce qui apparaît dans Nuvio.</string>
     <string name="compose_settings_root_downloads_description">Gérez vos films et épisodes téléchargés.</string>
@@ -1349,22 +1347,6 @@
     <string name="trailer_unable_to_play">Impossible de lire la bande-annonce</string>
     <string name="trakt_lists_load_failed">Impossible de charger les listes Trakt</string>
     <string name="trakt_lists_update_failed">Impossible de mettre à jour les listes Trakt</string>
-    <string name="updates_asset_line">%1$s • %2$s</string>
-    <string name="updates_check_failed">Échec de la vérification des mises à jour</string>
-    <string name="updates_download_failed">Échec du téléchargement</string>
-    <string name="updates_downloading_progress">Téléchargement %1$d %</string>
-    <string name="updates_install_failed">Impossible de démarrer l’installation</string>
-    <string name="updates_latest_version">Vous utilisez la version la plus récente.</string>
-    <string name="updates_message_allow_installs">Activez l’installation d’applications pour Nuvio puis revenez pour continuer.</string>
-    <string name="updates_message_downloading">Téléchargement de la mise à jour…</string>
-    <string name="updates_message_no_updates">Aucune mise à jour trouvée.</string>
-    <string name="updates_message_ready">Une nouvelle version est prête à être installée.</string>
-    <string name="updates_not_available">Les mises à jour intégrées ne sont pas disponibles dans cette version.</string>
-    <string name="updates_preparing_download">Préparation du téléchargement</string>
-    <string name="updates_release_notes">Notes de version</string>
-    <string name="updates_title_allow_installs">Autoriser les installations pour continuer</string>
-    <string name="updates_title_available">Mise à jour disponible</string>
-    <string name="updates_title_status">Statut de la mise à jour</string>
     <string name="addon_already_installed">Cet addon est déjà installé.</string>
     <string name="addon_invalid_url">Saisissez une URL d’addon valide</string>
     <string name="addon_load_manifest_failed">Impossible de charger le manifeste</string>
@@ -1785,8 +1767,6 @@
     <string name="collections_editor_tmdb_year_placeholder">2024</string>
     <string name="trakt_connected">Connecté à Trakt</string>
     <string name="trakt_disconnected">Déconnecté de Trakt</string>
-    <string name="updates_download_empty_body">Corps de téléchargement vide</string>
-    <string name="updates_download_file_missing">Le fichier de mise à jour téléchargé est introuvable.</string>
     <string name="addons_manifest_missing_field">Champ « %1$s » manquant dans le manifeste</string>
     <string name="collections_editor_tmdb_collection_title_format">Collection TMDB %1$s</string>
     <string name="collections_editor_tmdb_director_title_format">Réalisateur TMDB %1$s</string>
@@ -1895,13 +1875,6 @@
     <string name="trakt_connected_status">Connecté à Trakt</string>
     <string name="trakt_disconnected_status">Déconnecté de Trakt</string>
     <string name="unit_bytes_tb">To</string>
-    <string name="updates_apk_asset_missing">Aucun fichier APK trouvé dans la release</string>
-    <string name="updates_download_failed_http">Échec du téléchargement (HTTP %1$d)</string>
-    <string name="updates_downloaded_file_missing">Le fichier de mise à jour téléchargé est introuvable.</string>
-    <string name="updates_empty_download_body">Corps de téléchargement vide</string>
-    <string name="updates_github_api_error">Erreur API releases GitHub : %1$d</string>
-    <string name="updates_no_channel_release">Aucune mise à jour n’a encore été publiée.</string>
-    <string name="updates_release_missing_title">La release n’a pas de tag ni de nom</string>
     <!-- Continue Watching air date display -->
     <string name="cw_airs_date">Diffusion le %1$s</string>
     <string name="cw_airs_today">Diffusion aujourd’hui</string>

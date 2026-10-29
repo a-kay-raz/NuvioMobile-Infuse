@@ -57,7 +57,6 @@ internal sealed class SettingsSearchTarget {
     data class Page(val page: SettingsPage) : SettingsSearchTarget()
     object Collections : SettingsSearchTarget()
     object SwitchProfile : SettingsSearchTarget()
-    object CheckForUpdates : SettingsSearchTarget()
 }
 
 internal data class SettingsSearchEntry(
@@ -89,7 +88,6 @@ internal fun settingsSearchEntries(
     personalMediaAddonCopyEnabled: Boolean,
     liquidGlassNativeTabBarSupported: Boolean,
     switchProfileAvailable: Boolean,
-    checkForUpdatesAvailable: Boolean,
 ): List<SettingsSearchEntry> {
     val accountCategory = stringResource(SettingsCategory.Account.labelRes)
     val generalCategory = stringResource(SettingsCategory.General.labelRes)
@@ -350,18 +348,6 @@ internal fun settingsSearchEntries(
             section = stringResource(Res.string.compose_settings_root_about_section),
             category = aboutCategory,
             icon = Icons.Rounded.Info,
-        )
-    }
-    if (checkForUpdatesAvailable) {
-        add(
-            key = "check-updates",
-            title = stringResource(Res.string.compose_settings_root_check_updates_title),
-            description = stringResource(Res.string.compose_settings_root_check_updates_description),
-            page = if (supportersContributorsPageEnabled) supportersPage else licensesPage,
-            section = stringResource(Res.string.compose_settings_root_about_section),
-            category = aboutCategory,
-            icon = Icons.Rounded.CloudDownload,
-            target = SettingsSearchTarget.CheckForUpdates,
         )
     }
     addRow(

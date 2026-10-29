@@ -143,7 +143,6 @@ class StreamBackgroundSettingsTest {
                     personalMediaAddonCopyEnabled = false,
                     liquidGlassNativeTabBarSupported = false,
                     switchProfileAvailable = false,
-                    checkForUpdatesAvailable = false,
                 )
             }
         }

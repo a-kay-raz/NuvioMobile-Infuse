@@ -42,8 +42,6 @@ internal fun SettingsRootDestination(
     navController: NuvioNavigator,
     useNativeNavigation: Boolean,
     collectionsTitle: String,
-    onCheckForUpdates: (() -> Unit)?,
-    onTestUpdateBanner: (() -> Unit)?,
     onSwitchProfile: (() -> Unit)? = null,
     onEditProfile: (() -> Unit)? = null,
 ) {
@@ -69,8 +67,6 @@ internal fun SettingsRootDestination(
         onWatchPartyClick = {
             navController.navigate(PartyRoute(title = watchPartyTitle))
         },
-        onCheckForUpdatesClick = onCheckForUpdates,
-        onTestUpdateBannerClick = onTestUpdateBanner,
     )
 }
 

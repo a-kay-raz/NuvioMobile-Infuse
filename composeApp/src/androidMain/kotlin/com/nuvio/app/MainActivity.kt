@@ -88,7 +88,6 @@ import com.nuvio.app.features.wetrakr.PlatformWeTrakrSyncStorage
 import com.nuvio.app.features.simkl.SimklAuthStorage
 import com.nuvio.app.features.simkl.SimklSyncStorage
 import com.nuvio.app.features.tmdb.TmdbSettingsStorage
-import com.nuvio.app.features.updater.AndroidAppUpdaterPlatform
 import com.nuvio.app.features.watched.WatchedStorage
 import com.nuvio.app.features.streams.StreamLinkCacheStorage
 import com.nuvio.app.features.streams.StreamBadgeSettingsStorage
@@ -204,7 +203,6 @@ open class MainActivity : AppCompatActivity() {
         NuvioEnhancedBackupFileBridge.bindActivity(this)
         LiveTvStorage.initialize(applicationContext)
         DnsOverHttpsSettingsStorage.initialize(applicationContext)
-        AndroidAppUpdaterPlatform.initialize(applicationContext)
         PlatformLocalAccountDataCleaner.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.bindActivity(this)

@@ -281,7 +281,6 @@ internal fun settingsSearchEntries(
         description = stringResource(Res.string.compose_settings_root_downloads_description),
         pageLabel = downloadsPage,
         section = downloadsPage,
-        icon = Icons.Rounded.CloudDownload,
     )
     addPage(
         page = SettingsPage.Playback,
@@ -329,7 +328,6 @@ internal fun settingsSearchEntries(
         title = whatsNewPage,
         description = stringResource(Res.string.whats_new_root_description),
         category = aboutCategory,
-        icon = Icons.Rounded.NewReleases,
     )
     listOf(
         PlaybackSearchRow("nuvio-license", stringResource(Res.string.settings_licenses_attributions_nuvio_title), stringResource(Res.string.settings_licenses_attributions_nuvio_license)),
@@ -427,7 +425,6 @@ internal fun settingsSearchEntries(
         description = stringResource(Res.string.settings_appearance_dynamic_artwork_background_description),
         pageLabel = layoutPage,
         section = stringResource(Res.string.settings_appearance_section_display),
-        icon = Icons.Rounded.Palette,
     )
     if (liquidGlassNativeTabBarSupported) {
         addRow(
@@ -499,7 +496,6 @@ internal fun settingsSearchEntries(
         pageLabel = advancedPage,
         section = stringResource(Res.string.settings_advanced_section_cache),
         category = advancedCategory,
-        icon = Icons.Rounded.Tune,
     )
     addPage(
         page = SettingsPage.ContinueWatching,
@@ -940,7 +936,6 @@ internal fun settingsSearchEntries(
         key = "omdb",
         title = omdbPage,
         description = stringResource(Res.string.settings_integrations_omdb_description),
-        icon = Icons.Rounded.Link,
     )
     val tmdbModulesSection = stringResource(Res.string.settings_tmdb_section_modules)
     listOf(
@@ -1001,7 +996,6 @@ internal fun settingsSearchEntries(
             description = row.description,
             pageLabel = omdbPage,
             section = row.sectionOverride ?: stringResource(Res.string.settings_omdb_section_title),
-            icon = Icons.Rounded.Link,
         )
     }
 

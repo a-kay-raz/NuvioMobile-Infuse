@@ -5,6 +5,10 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Dns
@@ -314,4 +318,11 @@ internal val SettingsPage.icon: ImageVector
         SettingsPage.PlaybackVideo -> Icons.Default.VideoSettings
         SettingsPage.PlaybackBuffer -> Icons.Default.NetworkCheck
         SettingsPage.PlaybackP2p -> Icons.Default.Hub
+        SettingsPage.Profile -> Icons.Default.Person
+        SettingsPage.WhatsNew -> Icons.Default.NewReleases
+        SettingsPage.DebugLogs -> Icons.Default.BugReport
+        SettingsPage.Downloads -> Icons.Default.Download
+        SettingsPage.Omdb -> Icons.Default.Link
+        SettingsPage.LiveTv -> Icons.Default.LiveTv
+        SettingsPage.DiscordRpc -> Icons.Default.Link
     }

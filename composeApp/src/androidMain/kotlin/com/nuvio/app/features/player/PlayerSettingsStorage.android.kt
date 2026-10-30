@@ -55,6 +55,161 @@ actual object PlayerSettingsStorage {
     private const val subtitleOutlineColorKey = "subtitle_outline_color"
     private const val subtitleOutlineEnabledKey = "subtitle_outline_enabled"
     private const val subtitleOutlineWidthKey = "subtitle_outline_width"
+    private const val androidAudioPassthroughEnabledKey = "android_audio_passthrough_enabled"
+    private const val androidExoChaptersEnabledKey = "android_exo_chapters_enabled"
+    private const val androidLibmpvHardwareDecodingEnabledKey = "android_libmpv_hardware_decoding_enabled"
+    private const val androidLibmpvVideoOutputKey = "android_libmpv_video_output"
+    private const val androidLibmpvYuv420pEnabledKey = "android_libmpv_yuv420p_enabled"
+    private const val androidPlaybackEngineKey = "android_playback_engine"
+    private const val animeSkipClientIdKey = "animeskip_client_id"
+    private const val animeSkipEnabledKey = "animeskip_enabled"
+    private const val autoSkipMovieCreditsKey = "auto_skip_movie_credits"
+    private const val autoSkipPostCreditsKey = "auto_skip_post_credits"
+    private const val autoSkipSegmentTypesKey = "auto_skip_segment_types"
+    private const val autoSwitchPlaybackEngineOnErrorKey = "auto_switch_playback_engine_on_error"
+    private const val customPlaybackBuffersEnabledKey = "custom_playback_buffers_enabled"
+    private const val decoderPriorityKey = "decoder_priority"
+    private const val exoNativeMemoryEnabledKey = "exo_native_memory_enabled"
+    private const val introDbApiKeyKey = "introdb_api_key"
+    private const val introSubmitEnabledKey = "intro_submit_enabled"
+    private const val iosAudioOutputModeKey = "ios_audio_output_mode"
+    private const val iosBrightnessKey = "ios_brightness"
+    private const val iosContrastKey = "ios_contrast"
+    private const val iosDebandEnabledKey = "ios_deband_enabled"
+    private const val iosExtendedDynamicRangeEnabledKey = "ios_extended_dynamic_range_enabled"
+    private const val iosGammaKey = "ios_gamma"
+    private const val iosHardwareDecoderModeKey = "ios_hardware_decoder_mode"
+    private const val iosHdrComputePeakEnabledKey = "ios_hdr_compute_peak_enabled"
+    private const val iosInterpolationEnabledKey = "ios_interpolation_enabled"
+    private const val iosSaturationKey = "ios_saturation"
+    private const val iosTargetColorspaceHintEnabledKey = "ios_target_colorspace_hint_enabled"
+    private const val iosTargetPrimariesKey = "ios_target_primaries"
+    private const val iosTargetTransferKey = "ios_target_transfer"
+    private const val iosToneMappingModeKey = "ios_tone_mapping_mode"
+    private const val iosVideoOutputPresetKey = "ios_video_output_preset"
+    private const val libassRenderModeKey = "libass_render_mode"
+    private const val libassRenderScaleKey = "libass_render_scale"
+    private const val libassRenderTypeKey = "libass_render_type"
+    private const val mapDV7ToHevcKey = "map_dv7_to_hevc"
+    private const val miniPlayerEnabledKey = "mini_player_enabled"
+    private const val nextEpisodeThresholdMinutesBeforeEndKey = "next_episode_threshold_minutes_before_end_v2"
+    private const val nextEpisodeThresholdModeKey = "next_episode_threshold_mode"
+    private const val nextEpisodeThresholdPercentKey = "next_episode_threshold_percent_v2"
+    private const val nightModeButtonEnabledKey = "night_mode_button_enabled"
+    private const val nightModeEnabledKey = "night_mode_enabled"
+    private const val playbackBackBufferSecondsKey = "playback_back_buffer_seconds"
+    private const val playbackMaxBufferSecondsKey = "playback_max_buffer_seconds"
+    private const val playbackMinBufferSecondsKey = "playback_min_buffer_seconds"
+    private const val playbackRebufferSecondsKey = "playback_rebuffer_seconds"
+    private const val playbackStartBufferSecondsKey = "playback_start_buffer_seconds"
+    private const val playbackTargetBufferMbKey = "playback_target_buffer_mb"
+    private const val preloadNextEpisodeSourcesKey = "preload_next_episode_sources"
+    private const val privateViewingEnabledKey = "private_viewing_enabled"
+    private const val skipIntroEnabledKey = "skip_intro_enabled"
+    private const val streamAutoPlayModeKey = "stream_auto_play_mode"
+    private const val streamAutoPlayNextEpisodeEnabledKey = "stream_auto_play_next_episode_enabled"
+    private const val streamAutoPlayNextEpisodeFallbackEnabledKey = "stream_auto_play_next_episode_fallback_enabled"
+    private const val streamAutoPlayPreferBingeGroupKey = "stream_auto_play_prefer_binge_group"
+    private const val streamAutoPlayRegexKey = "stream_auto_play_regex"
+    private const val streamAutoPlayReuseBingeGroupKey = "stream_auto_play_reuse_binge_group"
+    private const val streamAutoPlaySelectedAddonsKey = "stream_auto_play_selected_addons"
+    private const val streamAutoPlaySelectedPluginsKey = "stream_auto_play_selected_plugins"
+    private const val streamAutoPlaySourceKey = "stream_auto_play_source"
+    private const val streamAutoPlayTimeoutSecondsKey = "stream_auto_play_timeout_seconds"
+    private const val streamReuseLastLinkCacheHoursKey = "stream_reuse_last_link_cache_hours"
+    private const val streamReuseLastLinkEnabledKey = "stream_reuse_last_link_enabled"
+    private const val subtitleBoldKey = "subtitle_bold"
+    private const val subtitleBottomOffsetKey = "subtitle_bottom_offset"
+    private const val subtitleFontSizeSpKey = "subtitle_font_size_sp"
+    private const val subtitleShowOnlyPreferredLanguagesKey = "subtitle_show_only_preferred_languages"
+    private const val subtitleStripSdhKey = "subtitle_strip_sdh"
+    private const val subtitleUseForcedSubtitlesKey = "subtitle_use_forced_subtitles"
+    private const val tunnelingEnabledKey = "tunneling_enabled"
+    private const val useLibassKey = "use_libass"
+    private const val useLibmpvAssKey = "use_libmpv_ass"
+    private const val vodDiskCacheAutoSizeKey = "vod_disk_cache_auto_size"
+    private const val vodDiskCacheEnabledKey = "vod_disk_cache_enabled"
+    private const val vodDiskCacheSizeMbKey = "vod_disk_cache_size_mb"
+    private val syncKeys = listOf(
+        showLoadingOverlayKey,
+        showPlayerLoadingStatusKey,
+        pauseOverlayEnabledKey,
+        showParentalGuideKey,
+        resizeModeKey,
+        holdToSpeedEnabledKey,
+        holdToSpeedValueKey,
+        touchGesturesEnabledKey,
+        externalPlayerEnabledKey,
+        externalPlayerForwardSubtitlesKey,
+        externalPlayerSendSkipSegmentsKey,
+        externalPlayerIdKey,
+        preferredAudioLanguageKey,
+        secondaryPreferredAudioLanguageKey,
+        preferredSubtitleLanguageKey,
+        secondaryPreferredSubtitleLanguageKey,
+        subtitleTextColorKey,
+        subtitleBackgroundColorKey,
+        subtitleOutlineColorKey,
+        subtitleOutlineEnabledKey,
+        subtitleOutlineWidthKey,
+        subtitleBoldKey,
+        subtitleFontSizeSpKey,
+        subtitleBottomOffsetKey,
+        subtitleStripSdhKey,
+        subtitleUseForcedSubtitlesKey,
+        subtitleShowOnlyPreferredLanguagesKey,
+        streamReuseLastLinkEnabledKey,
+        streamReuseLastLinkCacheHoursKey,
+        androidPlaybackEngineKey,
+        androidLibmpvVideoOutputKey,
+        androidLibmpvHardwareDecodingEnabledKey,
+        androidLibmpvYuv420pEnabledKey,
+        androidExoChaptersEnabledKey,
+        decoderPriorityKey,
+        mapDV7ToHevcKey,
+        tunnelingEnabledKey,
+        streamAutoPlayModeKey,
+        streamAutoPlaySourceKey,
+        streamAutoPlaySelectedAddonsKey,
+        streamAutoPlaySelectedPluginsKey,
+        streamAutoPlayRegexKey,
+        streamAutoPlayTimeoutSecondsKey,
+        skipIntroEnabledKey,
+        autoSkipMovieCreditsKey,
+        autoSkipSegmentTypesKey,
+        autoSkipPostCreditsKey,
+        animeSkipEnabledKey,
+        animeSkipClientIdKey,
+        streamAutoPlayNextEpisodeEnabledKey,
+        streamAutoPlayNextEpisodeFallbackEnabledKey,
+        streamAutoPlayPreferBingeGroupKey,
+        streamAutoPlayReuseBingeGroupKey,
+        nextEpisodeThresholdModeKey,
+        nextEpisodeThresholdPercentKey,
+        nextEpisodeThresholdMinutesBeforeEndKey,
+        preloadNextEpisodeSourcesKey,
+        miniPlayerEnabledKey,
+        useLibassKey,
+        libassRenderTypeKey,
+        useLibmpvAssKey,
+        iosVideoOutputPresetKey,
+        iosToneMappingModeKey,
+        iosTargetPrimariesKey,
+        iosTargetTransferKey,
+        iosHardwareDecoderModeKey,
+        iosAudioOutputModeKey,
+        iosExtendedDynamicRangeEnabledKey,
+        iosTargetColorspaceHintEnabledKey,
+        iosHdrComputePeakEnabledKey,
+        iosDebandEnabledKey,
+        iosInterpolationEnabledKey,
+        iosBrightnessKey,
+        iosContrastKey,
+        iosSaturationKey,
+        iosGammaKey,
+        subtitleAppearanceKey,
+        autoSwitchPlaybackEngineOnErrorKey,
+    )
     private var preferences: SharedPreferences? = null
     private var appContext: Context? = null
 

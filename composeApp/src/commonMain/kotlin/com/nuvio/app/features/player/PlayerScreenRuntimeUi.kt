@@ -533,7 +533,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
             },
             nightModeEnabled = playerSettingsUiState.nightModeEnabled,
             onNightModeClick = if (
-                playerSettingsUiState.nightModeButtonEnabled && playerController != null
+                playerSettingsUiState.nightModeButtonEnabled && playerController?.supportsNightMode == true
             ) {
                 {
                     PlayerSettingsRepository.setNightModeEnabled(!PlayerSettingsRepository.uiState.value.nightModeEnabled)

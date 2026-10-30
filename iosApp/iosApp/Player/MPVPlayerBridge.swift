@@ -3,6 +3,7 @@ import UIKit
 import AVFoundation
 import Metal
 import Libmpv
+import Libavfilter
 import ComposeApp
 
 // MARK: - Player Bridge Implementation (Kotlin protocol conformance)
@@ -131,6 +132,7 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
     func configureAudioOutput(audioOutput: String) {
         playerVC?.configureAudioOutput(audioOutput: audioOutput)
     }
+    func isNightModeSupported() -> Bool { MPVPlayerViewController.nightModeSupported }
     func setNightMode(enabled: Bool, filter: String, label: String) {
         ensurePlayerViewController().setNightMode(enabled, filter: (filter: filter, label: label))
     }
@@ -1439,8 +1441,19 @@ final class MPVPlayerViewController: UIViewController {
         applyNightModeFilter()
     }
 
+    static let nightModeSupported: Bool = {
+        let supported = avfilter_get_by_name("acompressor") != nil && avfilter_get_by_name("alimiter") != nil
+        if !supported {
+            InAppLogBridge.shared.warn(
+                tag: "MPV/iOS",
+                message: "night mode unavailable: FFmpeg build lacks acompressor/alimiter"
+            )
+        }
+        return supported
+    }()
+
     private func applyNightModeFilter() {
-        guard mpv != nil, let nightModeFilter else { return }
+        guard mpv != nil, let nightModeFilter, Self.nightModeSupported else { return }
         command("af", args: ["remove", nightModeFilter.label], checkForErrors: false)
         if nightModeEnabled {
             command("af", args: ["add", nightModeFilter.filter])

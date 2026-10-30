@@ -520,8 +520,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
             },
             nightModeEnabled = playerSettingsUiState.nightModeEnabled,
             onNightModeClick = if (
-                playerSettingsUiState.nightModeButtonEnabled &&
-                playerController?.playbackEngine == AndroidPlaybackEngine.ExoPlayer
+                playerSettingsUiState.nightModeButtonEnabled && playerController?.supportsNightMode == true
             ) {
                 {
                     PlayerSettingsRepository.setNightModeEnabled(!PlayerSettingsRepository.uiState.value.nightModeEnabled)

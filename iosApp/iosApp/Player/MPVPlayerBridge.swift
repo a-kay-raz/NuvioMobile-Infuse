@@ -3,6 +3,7 @@ import UIKit
 import AVFoundation
 import Metal
 import Libmpv
+import Libavfilter
 import ComposeApp
 
 // MARK: - Player Bridge Implementation (Kotlin protocol conformance)
@@ -130,6 +131,10 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
     }
     func configureAudioOutput(audioOutput: String) {
         playerVC?.configureAudioOutput(audioOutput: audioOutput)
+    }
+    func isNightModeSupported() -> Bool { MPVPlayerViewController.nightModeSupported }
+    func setNightMode(enabled: Bool, filter: String, label: String) {
+        ensurePlayerViewController().setNightMode(enabled, filter: (filter: filter, label: label))
     }
 
     func applyAudioLanguagePreferences(languages: [String]) {
@@ -415,6 +420,8 @@ final class MPVPlayerViewController: UIViewController {
     private var lastVideoOutputSettings: VideoOutputSettings?
     private var lastSubtitleStyle: SubtitleStyleSettings?
     private var lastAudioOutput: String?
+    private var nightModeEnabled = false
+    private var nightModeFilter: (filter: String, label: String)?
     private var lastResizeMode: Int?
     private var lastVideoZoom: Double?
     private var lastSubtitleDelayMs: Int?
@@ -732,6 +739,7 @@ final class MPVPlayerViewController: UIViewController {
         setSetupOption("demuxer-lavf-o", "protocol_whitelist=[file,crypto,data,http,https,tcp,tls]")
 
         checkError(mpv_initialize(mpv))
+        applyNightModeFilter()
 
         mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG)
         mpv_observe_property(mpv, 0, "paused-for-cache", MPV_FORMAT_FLAG)
@@ -1420,6 +1428,32 @@ final class MPVPlayerViewController: UIViewController {
         setVideoEqualizer("contrast", contrast)
         setVideoEqualizer("saturation", saturation)
         setVideoEqualizer("gamma", gamma)
+    }
+
+    func setNightMode(_ enabled: Bool, filter: (filter: String, label: String)) {
+        nightModeEnabled = enabled
+        nightModeFilter = filter
+        applyNightModeFilter()
+    }
+
+    static let nightModeSupported: Bool = {
+        let supported = avfilter_get_by_name("acompressor") != nil && avfilter_get_by_name("alimiter") != nil
+        if !supported {
+            InAppLogBridge.shared.warn(
+                tag: "MPV/iOS",
+                message: "night mode unavailable: FFmpeg build lacks acompressor/alimiter"
+            )
+        }
+        return supported
+    }()
+
+    private func applyNightModeFilter() {
+        guard mpv != nil, let nightModeFilter, Self.nightModeSupported else { return }
+        command("af", args: ["remove", nightModeFilter.label], checkForErrors: false)
+        if nightModeEnabled {
+            command("af", args: ["add", nightModeFilter.filter])
+        }
+        InAppLogBridge.shared.info(tag: "MPV/iOS", message: "night mode \(nightModeEnabled ? "on" : "off")")
     }
 
     func configureAudioOutput(audioOutput: String) {
@@ -2216,7 +2250,14 @@ final class MPVPlayerViewController: UIViewController {
             handleVideoOutputDeviceLost()
         }
 
-        if emitCoalescedLog(prefix: prefix, level: level, text: trimmed) {
+        if let reconnect = Self.keepAliveReconnectLog(prefix: prefix, text: trimmed) {
+            if reconnect == .summary,
+               emitCoalescedLog(prefix: prefix, level: "debug", text: Self.keepAliveReconnectSummary) {
+                InAppLogBridge.shared.mpv(
+                    platform: "iOS", prefix: prefix, level: "debug", message: Self.keepAliveReconnectSummary
+                )
+            }
+        } else if emitCoalescedLog(prefix: prefix, level: level, text: trimmed) {
             InAppLogBridge.shared.mpv(platform: "iOS", prefix: prefix, level: level, message: trimmed)
         }
 
@@ -2228,6 +2269,26 @@ final class MPVPlayerViewController: UIViewController {
         }
         errorStateLock.unlock()
     }
+
+    private enum KeepAliveReconnectLog {
+        case summary
+        case folded
+    }
+
+    private static func keepAliveReconnectLog(prefix: String, text: String) -> KeepAliveReconnectLog? {
+        guard prefix == "ffmpeg" || prefix.hasPrefix("ffmpeg/") else { return nil }
+        switch text {
+        case "tls: Error in the pull function.", "tls: IO error: End of file":
+            return .folded
+        case "https: Error reading HTTP response: End of file":
+            return .summary
+        default:
+            return text.contains("keepalive request failed") ? .summary : nil
+        }
+    }
+
+    private static let keepAliveReconnectSummary =
+        "HTTP keep-alive connection closed by the server; reconnecting"
 
     private func emitCoalescedLog(prefix: String, level: String, text: String) -> Bool {
         let key = "\(prefix)|\(level)|\(text)"

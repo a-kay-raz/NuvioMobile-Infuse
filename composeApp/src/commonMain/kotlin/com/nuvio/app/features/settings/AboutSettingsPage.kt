@@ -1,38 +1,25 @@
 package com.nuvio.app.features.settings
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.nuvio.app.core.build.AppVersionConfig
-import com.nuvio.app.features.membership.MemberTier
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_whats_new
 import nuvio.composeapp.generated.resources.whats_new_root_description
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
+import nuvio.composeapp.generated.resources.compose_about_made_with
 import nuvio.composeapp.generated.resources.compose_about_version_format
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_privacy_policy
@@ -86,49 +73,24 @@ internal fun LazyListScope.aboutSettingsContent(
 }
 
 internal fun LazyListScope.settingsFooterContent(isTablet: Boolean) {
-    // Footer only: same official layout, only these two texts changed —
-    // (1) badge "Supporter+" -> "Enhanced+"
-    // (2) "Made with ❤️ by Tapframe and friends" -> "by A-kay Raz"
-    // Nothing else here is changed; the tier badge elsewhere
+    // Official footer from Luqman upstream 0.6.6 (f33b1dc), restored verbatim:
+    // MemberBrandWordmark + "made with" + version. The custom
+    // "Nuvio Enhanced + / by A-kay Raz" footer is removed.
     item {
         androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = if (isTablet) 20.dp else 16.dp),
         ) {
-            val footerHeight = if (isTablet) 30.dp else 26.dp
-            Row(
-                modifier = Modifier
-                    .height(footerHeight)
-                    .align(Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AppBrandWordmark(
-                    modifier = Modifier.height(footerHeight),
-                )
-                var badgeSize by remember { mutableStateOf(IntSize.Zero) }
-                val enhancedPlusBrush = rememberMemberBadgeGradientBrush(
-                    style = MemberTier.SUPPORTER_PLUS.badgeStyle(),
-                    size = badgeSize,
-                )
-                Spacer(modifier = Modifier.width(footerHeight * 0.14f))
-                Text(
-                    text = "Enhanced+",
-                    style = TextStyle(
-                        brush = enhancedPlusBrush,
-                        fontSize = (footerHeight.value * MemberWordmarkHeightRatio).sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                    modifier = Modifier
-                        .offset(y = footerHeight * MemberWordmarkVerticalOffsetRatio)
-                        .onSizeChanged { badgeSize = it },
-                )
-            }
+            MemberBrandWordmark(
+                height = if (isTablet) 30.dp else 26.dp,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
             androidx.compose.foundation.layout.Spacer(
                 modifier = Modifier.height(if (isTablet) 10.dp else 8.dp),
             )
             Text(
-                text = "by A-kay Raz",
+                text = stringResource(Res.string.compose_about_made_with),
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

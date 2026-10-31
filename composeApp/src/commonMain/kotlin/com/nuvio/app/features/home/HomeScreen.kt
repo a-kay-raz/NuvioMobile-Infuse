@@ -69,6 +69,7 @@ import com.nuvio.app.core.network.NetworkStatusRepository
 import com.nuvio.app.core.ui.LocalNuvioBottomNavigationOverlayPadding
 import com.nuvio.app.core.ui.DynamicArtworkBackground
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
+import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.nuvioHorizontalScrollBleed
 import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.NuvioScreen
@@ -1462,7 +1463,7 @@ fun HomeScreen(
                                     menuExpanded = cloudStreamProviderMenuExpanded,
                                     onMenuExpandedChange = { cloudStreamProviderMenuExpanded = it },
                                     onProviderSelected = { HomeRepository.setSelectedCloudStreamProvider(it) },
-                                    modifier = Modifier.padding(horizontal = homeSectionPadding, bottom = 12.dp),
+                                    modifier = Modifier.padding(horizontal = homeSectionPadding).padding(bottom = 12.dp),
                                 )
                             }
                         }

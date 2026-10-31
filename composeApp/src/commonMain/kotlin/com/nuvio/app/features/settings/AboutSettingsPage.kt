@@ -9,19 +9,17 @@ import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.build.AppVersionConfig
-import com.nuvio.app.features.membership.MemberTier
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_whats_new
 import nuvio.composeapp.generated.resources.whats_new_root_description
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
+import nuvio.composeapp.generated.resources.compose_about_made_with
 import nuvio.composeapp.generated.resources.compose_about_version_format
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_privacy_policy
@@ -79,45 +77,28 @@ internal fun LazyListScope.aboutSettingsContent(
 }
 
 internal fun LazyListScope.settingsFooterContent(isTablet: Boolean) {
+    // Official footer from Luqman upstream 0.6.6 (f33b1dc), restored verbatim:
+    // MemberBrandWordmark + "made with" + version. The custom
+    // "Nuvio Enhanced + / by A-kay Raz" footer is removed.
     item {
         androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = if (isTablet) 20.dp else 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Same Supporter+ badge colours as MemberBrandWordmark
-            // (#91A8FF -> #F08BD8 -> #FF9B8E -> #91A8FF), but STATIC:
-            // no infinite animation, so the footer no longer recomposes
-            // every frame while the Settings list is at rest at the end.
-            val supporterPlusBrush = remember {
-                Brush.horizontalGradient(
-                    colors = MemberTier.SUPPORTER_PLUS.badgeStyle().colorStops.map { it.second },
-                )
-            }
-            Text(
-                text = "Nuvio Enhanced +",
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleMedium.copy(
-                    brush = supporterPlusBrush,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                ),
-                textAlign = TextAlign.Center,
+            MemberBrandWordmark(
+                height = if (isTablet) 30.dp else 26.dp,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
             androidx.compose.foundation.layout.Spacer(
-                modifier = Modifier.height(2.dp),
+                modifier = Modifier.height(if (isTablet) 10.dp else 8.dp),
             )
             Text(
-                text = "by A-kay Raz",
+                text = stringResource(Res.string.compose_about_made_with),
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                ),
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-            )
-            androidx.compose.foundation.layout.Spacer(
-                modifier = Modifier.height(4.dp),
             )
             Text(
                 text = stringResource(

@@ -157,7 +157,10 @@ fun DetailMetaInfo(
         val ageBadge = meta.ageRating?.trim()?.takeIf { it.isNotBlank() }
         val hasMdbImdbRating = meta.externalRatings.any { it.source == PROVIDER_IMDB }
         val validImdbRating = meta.imdbRating
-            ?.takeIf { raw -> raw.toDoubleOrNull()?.let { it > 0.0 } == true }
+            ?.takeIf { showOverallRatings && !isMdbListActive }
+            ?.toDoubleOrNull()
+            ?.takeIf { it > 0.0 }
+            ?.let(::formatOneDecimal)
         val hasMetaRow = releaseLine != null ||
             runtimeText != null ||
             seasonCountLabel != null ||
@@ -1039,7 +1042,7 @@ private val ratingVisuals = listOf(
     ),
 )
 
-private fun formatOneDecimal(value: Double): String {
+internal fun formatOneDecimal(value: Double): String {
     val rounded = (value * 10.0).roundToInt()
     val whole = rounded / 10
     val decimal = (rounded % 10).absoluteValue

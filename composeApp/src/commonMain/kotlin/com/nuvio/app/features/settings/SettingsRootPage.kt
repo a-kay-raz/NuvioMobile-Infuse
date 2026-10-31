@@ -52,6 +52,45 @@ internal fun LazyListScope.settingsRootContent(
         }
     }
     SettingsCategory.entries.filter { category == null || it == category }.forEach { group ->
+        if (group == SettingsCategory.System) {
+            // Nuvio Enhanced gets its own separate box, not part of
+            // the System box with Notifications, Advanced and About.
+            item(key = "System_NuvioEnhanced") {
+                SettingsGroup(isTablet = isTablet) {
+                    SettingsPageRow(
+                        page = SettingsPage.NuvioEnhanced,
+                        description = Res.string.settings_nuvio_enhanced_description,
+                        isTablet = isTablet,
+                        onPageClick = onPageClick,
+                    )
+                }
+            }
+            item(key = group.name) {
+                SettingsGroup(isTablet = isTablet) {
+                    SettingsPageRow(
+                        page = SettingsPage.Notifications,
+                        description = Res.string.compose_settings_root_notifications_description,
+                        isTablet = isTablet,
+                        onPageClick = onPageClick,
+                    )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsPageRow(
+                        page = SettingsPage.Advanced,
+                        description = Res.string.compose_settings_root_advanced_description,
+                        isTablet = isTablet,
+                        onPageClick = onPageClick,
+                    )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsPageRow(
+                        page = SettingsPage.About,
+                        description = Res.string.compose_settings_root_about_description,
+                        isTablet = isTablet,
+                        onPageClick = onPageClick,
+                    )
+                }
+            }
+            return@forEach
+        }
         item(key = group.name) {
             SettingsGroup(isTablet = isTablet) {
                 when (group) {
@@ -118,38 +157,7 @@ internal fun LazyListScope.settingsRootContent(
                             onPageClick = onPageClick,
                         )
                     }
-                    SettingsCategory.System -> {
-                        // Official System box (Notifications, Advanced, About),
-                        // with the Infuse Nuvio Enhanced setting kept inside
-                        // the same box instead of its own separate box.
-                        SettingsPageRow(
-                            page = SettingsPage.NuvioEnhanced,
-                            description = Res.string.settings_nuvio_enhanced_description,
-                            isTablet = isTablet,
-                            onPageClick = onPageClick,
-                        )
-                        SettingsGroupDivider(isTablet = isTablet)
-                        SettingsPageRow(
-                            page = SettingsPage.Notifications,
-                            description = Res.string.compose_settings_root_notifications_description,
-                            isTablet = isTablet,
-                            onPageClick = onPageClick,
-                        )
-                        SettingsGroupDivider(isTablet = isTablet)
-                        SettingsPageRow(
-                            page = SettingsPage.Advanced,
-                            description = Res.string.compose_settings_root_advanced_description,
-                            isTablet = isTablet,
-                            onPageClick = onPageClick,
-                        )
-                        SettingsGroupDivider(isTablet = isTablet)
-                        SettingsPageRow(
-                            page = SettingsPage.About,
-                            description = Res.string.compose_settings_root_about_description,
-                            isTablet = isTablet,
-                            onPageClick = onPageClick,
-                        )
-                    }
+                    // System is handled by the separate-box branch above.
                 }
             }
         }

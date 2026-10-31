@@ -19,7 +19,6 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_whats_new
 import nuvio.composeapp.generated.resources.whats_new_root_description
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
-import nuvio.composeapp.generated.resources.compose_about_made_with
 import nuvio.composeapp.generated.resources.compose_about_version_format
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_privacy_policy
@@ -90,7 +89,7 @@ internal fun LazyListScope.settingsFooterContent(isTablet: Boolean) {
                 modifier = Modifier.height(if (isTablet) 10.dp else 8.dp),
             )
             Text(
-                text = stringResource(Res.string.compose_about_made_with),
+                text = "by A-kay Raz",
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

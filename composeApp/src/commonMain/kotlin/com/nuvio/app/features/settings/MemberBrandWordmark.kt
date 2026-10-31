@@ -41,8 +41,8 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
-private const val MemberWordmarkHeightRatio = 132f / 344f
-private const val MemberWordmarkVerticalOffsetRatio = -12f / 344f
+internal const val MemberWordmarkHeightRatio = 132f / 344f
+internal const val MemberWordmarkVerticalOffsetRatio = -12f / 344f
 internal const val MemberBadgeGradientAngleDegrees = 100f
 internal const val MemberBadgeGradientWidthMultiplier = 2.4f
 internal const val MemberBadgeSweepHalfDurationMs = 2_750

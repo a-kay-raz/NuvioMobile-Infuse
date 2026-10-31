@@ -109,8 +109,6 @@ data class PluginsSettingsRoute(override val title: String = "") : SettingsDesti
 data class AccountSettingsRoute(override val title: String = "") : SettingsDestinationRoute
 
 @Serializable
-
-@Serializable
 data class LicensesAttributionsSettingsRoute(override val title: String = "") : SettingsDestinationRoute
 
 @Serializable

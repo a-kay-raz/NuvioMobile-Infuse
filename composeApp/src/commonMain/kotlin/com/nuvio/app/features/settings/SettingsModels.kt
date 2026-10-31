@@ -83,11 +83,6 @@ internal enum class SettingsPage(
         category = SettingsCategory.You,
         parentPage = Root,
     ),
-    SupportersContributors(
-        titleRes = Res.string.compose_settings_page_supporters_contributors,
-        category = SettingsCategory.System,
-        parentPage = About,
-    ),
     LicensesAttributions(
         titleRes = Res.string.compose_settings_page_licenses_attributions,
         category = SettingsCategory.System,
@@ -299,7 +294,6 @@ internal val SettingsPage.icon: ImageVector
     get() = when (this) {
         SettingsPage.Root -> Icons.Rounded.Settings
         SettingsPage.Account -> Icons.Default.Person
-        SettingsPage.SupportersContributors -> Icons.Default.Favorite
         SettingsPage.LicensesAttributions -> Icons.Default.Info
         SettingsPage.Playback -> Icons.Rounded.PlayArrow
         SettingsPage.Appearance -> Icons.Default.Palette

@@ -124,6 +124,43 @@ internal fun SupporterBadgeIfPresent(
     }
 }
 
+/**
+ * Footer/profile "Enhanced+" badge: same Supporter+ gradient and sizing as
+ * [MemberBadge], but a fixed label with no membership-tier check, so it
+ * shows even when no supporter tier is present. Donation/tier badges
+ * elsewhere are not changed by this.
+ */
+@Composable
+internal fun EnhancedBadge(
+    height: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val badgeStyle = remember { MemberTier.SUPPORTER_PLUS.badgeStyle() }
+    var badgeSize by remember { mutableStateOf(IntSize.Zero) }
+    val gradientBrush = rememberMemberBadgeGradientBrush(
+        style = badgeStyle,
+        size = badgeSize,
+    )
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Spacer(modifier = Modifier.width(height * 0.14f))
+        Text(
+            text = "Enhanced+",
+            style = TextStyle(
+                brush = gradientBrush,
+                fontSize = (height.value * MemberWordmarkHeightRatio).sp,
+                fontWeight = FontWeight.SemiBold,
+            ),
+            modifier = Modifier
+                .offset(y = height * MemberWordmarkVerticalOffsetRatio)
+                .onSizeChanged { badgeSize = it },
+        )
+    }
+}
+
 @Composable
 private fun MemberBadge(
     tier: MemberTier,

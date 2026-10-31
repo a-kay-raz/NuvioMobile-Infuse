@@ -93,7 +93,6 @@ internal data class SettingsSearchEntry(
 internal fun settingsSearchEntries(
     isTablet: Boolean,
     pluginsEnabled: Boolean,
-    supportersContributorsPageEnabled: Boolean,
     accountDeletionEnabled: Boolean,
     personalMediaAddonCopyEnabled: Boolean,
     liquidGlassNativeTabBarSupported: Boolean,
@@ -311,7 +310,6 @@ internal fun settingsSearchEntries(
         title = notificationsPage,
         description = stringResource(Res.string.compose_settings_root_notifications_description),
     )
-    // Infuse: Contributors/Supporters search entry intentionally hidden.
     addPage(
         page = SettingsPage.LicensesAttributions,
         key = "licenses-attributions",

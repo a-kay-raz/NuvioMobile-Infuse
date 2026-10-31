@@ -116,7 +116,6 @@ private fun watchPartyRow(onClick: () -> Unit): (() -> Unit)? {
 
 private fun SettingsPage.isEnabledByPolicy(): Boolean =
     when (this) {
-        SettingsPage.SupportersContributors -> AppFeaturePolicy.supportersContributorsPageEnabled
         SettingsPage.PlaybackP2p -> P2pSettingsRepository.isVisible
         SettingsPage.PlaybackBuffer -> !isIos
         else -> true
@@ -152,7 +151,6 @@ fun SettingsScreen(
     onAddonsClick: () -> Unit = {},
     onPluginsClick: () -> Unit = {},
     onAccountClick: () -> Unit = {},
-    onSupportersContributorsClick: () -> Unit = {},
     onLicensesAttributionsClick: () -> Unit = {},
     onWhatsNewClick: () -> Unit = {},
     onCollectionsClick: () -> Unit = {},
@@ -343,11 +341,6 @@ fun SettingsScreen(
         } else {
             onAccountClick
         }
-        val openSupportersContributors = if (onNavigatePage != null) {
-            { openPage(SettingsPage.SupportersContributors) }
-        } else {
-            onSupportersContributorsClick
-        }
         val openLicensesAttributions = if (onNavigatePage != null) {
             { openPage(SettingsPage.LicensesAttributions) }
         } else {
@@ -440,7 +433,6 @@ fun SettingsScreen(
                         onSwitchProfile = onSwitchProfile,
                         onEditProfile = onEditProfile,
                         onPosterClick = onPosterClick,
-                        onSupportersContributorsClick = openSupportersContributors,
                         onLicensesAttributionsClick = openLicensesAttributions,
                         onWhatsNewClick = openWhatsNew,
                         onCollectionsClick = onCollectionsClick,
@@ -496,7 +488,6 @@ fun SettingsScreen(
                         onAddonsClick = openAddons,
                         onPluginsClick = openPlugins,
                         onAccountClick = openAccount,
-                        onSupportersContributorsClick = openSupportersContributors,
                         onLicensesAttributionsClick = openLicensesAttributions,
                         onWhatsNewClick = openWhatsNew,
                         onCollectionsClick = onCollectionsClick,
@@ -558,7 +549,6 @@ private fun MobileSettingsScreen(
     onAddonsClick: () -> Unit = {},
     onPluginsClick: () -> Unit = {},
     onAccountClick: () -> Unit = {},
-    onSupportersContributorsClick: () -> Unit = {},
     onLicensesAttributionsClick: () -> Unit = {},
     onWhatsNewClick: () -> Unit = {},
     onCollectionsClick: () -> Unit = {},
@@ -595,11 +585,6 @@ private fun MobileSettingsScreen(
             when (target) {
                 is SettingsSearchTarget.Page -> when (target.page) {
                     SettingsPage.Account -> onAccountClick()
-                    SettingsPage.SupportersContributors -> {
-                        if (AppFeaturePolicy.supportersContributorsPageEnabled) {
-                            onSupportersContributorsClick()
-                        }
-                    }
                     SettingsPage.LicensesAttributions -> onLicensesAttributionsClick()
                     SettingsPage.WhatsNew -> onWhatsNewClick()
                     SettingsPage.ContinueWatching -> onContinueWatchingClick()
@@ -662,7 +647,6 @@ private fun MobileSettingsScreen(
                             settingsSearchEntries(
                                 isTablet = false,
                                 pluginsEnabled = AppFeaturePolicy.pluginsEnabled,
-                                supportersContributorsPageEnabled = AppFeaturePolicy.supportersContributorsPageEnabled,
                                 accountDeletionEnabled = AppFeaturePolicy.accountDeletionEnabled,
                                 personalMediaAddonCopyEnabled = AppFeaturePolicy.personalMediaAddonCopyEnabled,
                                 liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
@@ -698,11 +682,6 @@ private fun MobileSettingsScreen(
                     onPosterClick = onPosterClick,
                     onBack = if (profileDrawsOwnChrome) onNavigateBack else null,
                 )
-                SettingsPage.SupportersContributors -> {
-                    if (AppFeaturePolicy.supportersContributorsPageEnabled) {
-                        supportersContributorsContent(isTablet = false)
-                    }
-                }
                 SettingsPage.LicensesAttributions -> licensesAttributionsContent(
                     isTablet = false,
                 )
@@ -753,9 +732,7 @@ private fun MobileSettingsScreen(
                 SettingsPage.About -> aboutSettingsContent(
                     isTablet = false,
                     onWhatsNewClick = onWhatsNewClick,
-                    onSupportersContributorsClick = onSupportersContributorsClick,
                     onLicensesAttributionsClick = onLicensesAttributionsClick,
-                    showSupportersContributorsPage = AppFeaturePolicy.supportersContributorsPageEnabled,
                 )
                 SettingsPage.Advanced -> advancedSettingsContent(
                     isTablet = false,
@@ -956,7 +933,6 @@ private fun TabletSettingsScreen(
     onSwitchProfile: (() -> Unit)? = null,
     onEditProfile: (() -> Unit)? = null,
     onPosterClick: ((MetaPreview) -> Unit)? = null,
-    onSupportersContributorsClick: () -> Unit = {},
     onLicensesAttributionsClick: () -> Unit = {},
     onWhatsNewClick: () -> Unit = {},
     onCollectionsClick: () -> Unit = {},
@@ -1112,7 +1088,6 @@ private fun TabletSettingsScreen(
                                 settingsSearchEntries(
                                     isTablet = true,
                                     pluginsEnabled = AppFeaturePolicy.pluginsEnabled,
-                                    supportersContributorsPageEnabled = AppFeaturePolicy.supportersContributorsPageEnabled,
                                     accountDeletionEnabled = AppFeaturePolicy.accountDeletionEnabled,
                                     personalMediaAddonCopyEnabled = AppFeaturePolicy.personalMediaAddonCopyEnabled,
                                     liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
@@ -1148,11 +1123,6 @@ private fun TabletSettingsScreen(
                         onEditProfile = onEditProfile,
                         onPosterClick = onPosterClick,
                     )
-                    SettingsPage.SupportersContributors -> {
-                        if (AppFeaturePolicy.supportersContributorsPageEnabled) {
-                            supportersContributorsContent(isTablet = true)
-                        }
-                    }
                     SettingsPage.LicensesAttributions -> licensesAttributionsContent(
                         isTablet = true,
                     )
@@ -1203,10 +1173,8 @@ private fun TabletSettingsScreen(
                     SettingsPage.About -> aboutSettingsContent(
                         isTablet = true,
                         onWhatsNewClick = { openInlinePage(SettingsPage.WhatsNew) },
-                        onSupportersContributorsClick = { openInlinePage(SettingsPage.SupportersContributors) },
                         onLicensesAttributionsClick = { openInlinePage(SettingsPage.LicensesAttributions) },
-                        showSupportersContributorsPage = AppFeaturePolicy.supportersContributorsPageEnabled,
-                    )
+                        )
                     SettingsPage.Advanced -> advancedSettingsContent(
                         isTablet = true,
                         rememberLastProfileEnabled = rememberLastProfileEnabled,

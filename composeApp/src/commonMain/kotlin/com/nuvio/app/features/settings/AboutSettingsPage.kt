@@ -44,9 +44,7 @@ private const val PRIVACY_POLICY_URL = "https://nuvio.tv/privacy-policy"
 
 internal fun LazyListScope.aboutSettingsContent(
     isTablet: Boolean,
-    onSupportersContributorsClick: () -> Unit,
     onLicensesAttributionsClick: () -> Unit,
-    showSupportersContributorsPage: Boolean,
     onWhatsNewClick: (() -> Unit)? = null,
 ) {
     item {
@@ -56,8 +54,6 @@ internal fun LazyListScope.aboutSettingsContent(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
-                // Infuse: Contributors/Supporters row intentionally hidden, even
-                // when showSupportersContributorsPage is true upstream.
                 if (onWhatsNewClick != null) {
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_whats_new),
@@ -94,7 +90,6 @@ internal fun LazyListScope.settingsFooterContent(isTablet: Boolean) {
     // (1) badge "Supporter+" -> "Enhanced+"
     // (2) "Made with ❤️ by Tapframe and friends" -> "by A-kay Raz"
     // Nothing else here is changed; the tier badge elsewhere
-    // (DonationSupportCard, profile badge) is untouched.
     item {
         androidx.compose.foundation.layout.Column(
             modifier = Modifier

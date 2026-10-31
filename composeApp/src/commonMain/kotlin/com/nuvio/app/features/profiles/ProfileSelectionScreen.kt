@@ -67,7 +67,7 @@ import com.nuvio.app.core.ui.NuvioToastHost
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.features.membership.CosmeticEntitlement
 import com.nuvio.app.features.settings.AppBrandWordmark
-import com.nuvio.app.features.settings.SupporterBadgeIfPresent
+import com.nuvio.app.features.settings.EnhancedBadge
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -224,7 +224,7 @@ fun ProfileSelectionScreen(
                                 translationY = titleOffset.value
                             },
                     )
-                    SupporterBadgeIfPresent(
+                    EnhancedBadge(
                         height = if (isTabletLayout) 42.dp else 34.dp,
                         modifier = Modifier.graphicsLayer {
                             alpha = titleAlpha.value

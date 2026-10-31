@@ -9,15 +9,11 @@ import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.build.AppVersionConfig
@@ -90,18 +86,18 @@ internal fun LazyListScope.settingsFooterContent(isTablet: Boolean) {
                 .padding(horizontal = 20.dp, vertical = if (isTablet) 20.dp else 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Same gradient as the official Supporter+ badge (MemberBrandWordmark):
-            // 0xFF91A8FF -> 0xFFF08BD8 -> 0xFFFF9B8E -> 0xFF91A8FF, animated sweep.
-            var footerSize by remember { mutableStateOf(IntSize.Zero) }
-            val supporterPlusBrush = rememberMemberBadgeGradientBrush(
-                style = MemberTier.SUPPORTER_PLUS.badgeStyle(),
-                size = footerSize,
-            )
+            // Same Supporter+ badge colours as MemberBrandWordmark
+            // (#91A8FF -> #F08BD8 -> #FF9B8E -> #91A8FF), but STATIC:
+            // no infinite animation, so the footer no longer recomposes
+            // every frame while the Settings list is at rest at the end.
+            val supporterPlusBrush = remember {
+                Brush.horizontalGradient(
+                    colors = MemberTier.SUPPORTER_PLUS.badgeStyle().colorStops.map { it.second },
+                )
+            }
             Text(
                 text = "Nuvio Enhanced +",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onSizeChanged { footerSize = it },
+                modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.titleMedium.copy(
                     brush = supporterPlusBrush,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,

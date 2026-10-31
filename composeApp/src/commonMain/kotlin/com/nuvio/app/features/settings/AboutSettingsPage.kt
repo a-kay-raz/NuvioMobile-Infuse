@@ -19,11 +19,9 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_whats_new
 import nuvio.composeapp.generated.resources.whats_new_root_description
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
-import nuvio.composeapp.generated.resources.about_supporters_contributors_subtitle
 import nuvio.composeapp.generated.resources.compose_about_version_format
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_privacy_policy
-import nuvio.composeapp.generated.resources.compose_settings_page_supporters_contributors
 import nuvio.composeapp.generated.resources.compose_settings_root_about_section
 import nuvio.composeapp.generated.resources.compose_settings_root_privacy_policy_description
 import org.jetbrains.compose.resources.stringResource
@@ -44,16 +42,8 @@ internal fun LazyListScope.aboutSettingsContent(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
-                if (showSupportersContributorsPage) {
-                    SettingsNavigationRow(
-                        title = stringResource(Res.string.compose_settings_page_supporters_contributors),
-                        description = stringResource(Res.string.about_supporters_contributors_subtitle),
-                        icon = SettingsPage.SupportersContributors.icon,
-                        isTablet = isTablet,
-                        onClick = onSupportersContributorsClick,
-                    )
-                    SettingsGroupDivider(isTablet = isTablet)
-                }
+                // Infuse: Contributors/Supporters row intentionally hidden, even
+                // when showSupportersContributorsPage is true upstream.
                 if (onWhatsNewClick != null) {
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_whats_new),

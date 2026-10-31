@@ -115,7 +115,6 @@ internal fun settingsSearchEntries(
     val streamsPage = stringResource(Res.string.compose_settings_page_streams)
     val integrationsPage = stringResource(Res.string.compose_settings_page_integrations)
     val notificationsPage = stringResource(Res.string.compose_settings_page_notifications)
-    val supportersPage = stringResource(Res.string.compose_settings_page_supporters_contributors)
     val licensesPage = stringResource(Res.string.compose_settings_page_licenses_attributions)
     val whatsNewPage = stringResource(Res.string.compose_settings_page_whats_new)
     val homeLayoutPage = stringResource(Res.string.compose_settings_page_homescreen)
@@ -312,15 +311,7 @@ internal fun settingsSearchEntries(
         title = notificationsPage,
         description = stringResource(Res.string.compose_settings_root_notifications_description),
     )
-    if (supportersContributorsPageEnabled) {
-        addPage(
-            page = SettingsPage.SupportersContributors,
-            key = "supporters",
-            title = supportersPage,
-            description = stringResource(Res.string.about_supporters_contributors_subtitle),
-            category = aboutCategory,
-        )
-    }
+    // Infuse: Contributors/Supporters search entry intentionally hidden.
     addPage(
         page = SettingsPage.LicensesAttributions,
         key = "licenses-attributions",

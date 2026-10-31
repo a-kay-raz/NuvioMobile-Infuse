@@ -84,7 +84,7 @@ internal fun LazyListScope.settingsFooterContent(isTablet: Boolean) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "NUVIO Enhanced",
+                text = "Nuvio Enhanced+",
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
@@ -96,7 +96,7 @@ internal fun LazyListScope.settingsFooterContent(isTablet: Boolean) {
                 modifier = Modifier.height(2.dp),
             )
             Text(
-                text = "BY A-Kay Raz",
+                text = "by A-kay Raz",
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,

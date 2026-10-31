@@ -1454,6 +1454,19 @@ fun HomeScreen(
                         }
 
 
+                        if (runnableCloudStreamProviders.isNotEmpty()) {
+                            item(key = "cloudstream_provider_selector", contentType = "cloudstream_selector") {
+                                CloudStreamProviderSelectorHeader(
+                                    providers = runnableCloudStreamProviders,
+                                    selectedProviderId = selectedCloudStreamProviderId,
+                                    menuExpanded = cloudStreamProviderMenuExpanded,
+                                    onMenuExpandedChange = { cloudStreamProviderMenuExpanded = it },
+                                    onProviderSelected = { HomeRepository.setSelectedCloudStreamProvider(it) },
+                                    modifier = Modifier.padding(horizontal = homeSectionPadding, bottom = 12.dp),
+                                )
+                            }
+                        }
+
                         cloudStreamHomeSections.forEach { section ->
                             item(key = section.key, contentType = "catalog") {
                                 HomeCatalogRowSection(
@@ -1478,281 +1491,277 @@ fun HomeScreen(
                 }
             }
         }
+    }
+}
 
-        val hasDiscoveryProviders = runnableCloudStreamProviders.isNotEmpty()
-        if (hasDiscoveryProviders) {
-            if (cloudStreamProviderMenuExpanded) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {
-                            cloudStreamProviderMenuExpanded = false
-                        },
+@Composable
+private fun CloudStreamProviderSelectorHeader(
+    providers: List<CloudStreamPluginItem>,
+    selectedProviderId: String?,
+    menuExpanded: Boolean,
+    onMenuExpandedChange: (Boolean) -> Unit,
+    onProviderSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val themeAccent = MaterialTheme.colorScheme.primary
+    val themeSurface = MaterialTheme.colorScheme.surface
+    val themeOnSurface = MaterialTheme.colorScheme.onSurface
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "CloudStream",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.nuvio.colors.textPrimary,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            val isCs3Active = (selectedProviderId != null && selectedProviderId != "off") && providers.isNotEmpty()
+            val selectedCloudStreamProvider = providers.firstOrNull {
+                it.metadata.id.value == selectedProviderId && selectedProviderId != "off"
+            }
+            val pillLabel = when {
+                isCs3Active -> {
+                    if (selectedProviderId == "all") "All CS3"
+                    else (selectedCloudStreamProvider?.metadata?.name ?: "CloudStream")
+                }
+                else -> "Extensions"
+            }
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(themeSurface.copy(alpha = 0.92f))
+                    .border(1.2.dp, themeAccent, RoundedCornerShape(20.dp))
+                    .clickable { onMenuExpandedChange(!menuExpanded) }
+                    .padding(horizontal = 11.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Layers,
+                    contentDescription = null,
+                    tint = themeAccent,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = pillLabel,
+                    color = themeOnSurface,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                )
+                Spacer(modifier = Modifier.width(5.dp))
+                Icon(
+                    imageVector = if (menuExpanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = themeOnSurface.copy(alpha = 0.85f),
+                    modifier = Modifier.size(15.dp),
                 )
             }
-
+        }
+        if (menuExpanded) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(
-                        end = 16.dp,
-                        bottom = nativeBottomNavigationOverlayHeight + 16.dp,
-                    ),
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(themeSurface.copy(alpha = 0.95f))
+                    .border(1.dp, themeAccent.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+                    .padding(8.dp),
             ) {
                 Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    val themeAccent = MaterialTheme.colorScheme.primary
-                    val themeSurface = MaterialTheme.colorScheme.surface
-                    val themeOnSurface = MaterialTheme.colorScheme.onSurface
+                    val hasAnyExtensions = providers.isNotEmpty()
+                    val isAllExtensionsSelected = selectedProviderId == "all"
 
-                    if (cloudStreamProviderMenuExpanded) {
-                        Box(
+                    if (hasAnyExtensions) {
+                        Row(
                             modifier = Modifier
-                                .widthIn(min = 160.dp, max = 200.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(themeSurface.copy(alpha = 0.95f))
-                                .border(1.dp, themeAccent.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
-                                .padding(8.dp),
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .then(
+                                    if (isAllExtensionsSelected) {
+                                        Modifier.background(themeAccent.copy(alpha = 0.16f))
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                                .clickable {
+                                    if (isAllExtensionsSelected) {
+                                        onProviderSelected("off")
+                                    } else {
+                                        onProviderSelected("all")
+                                    }
+                                }
+                                .padding(horizontal = 7.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(max = 280.dp)
-                                    .verticalScroll(rememberScrollState()),
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                            ) {
-                                val hasAnyExtensions = runnableCloudStreamProviders.isNotEmpty()
-                                val isAllExtensionsSelected = selectedCloudStreamProviderId == "all"
-
-                                if (hasAnyExtensions) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .then(
-                                                if (isAllExtensionsSelected) {
-                                                    Modifier.background(themeAccent.copy(alpha = 0.16f))
-                                                } else {
-                                                    Modifier
-                                                }
-                                            )
-                                            .clickable {
-                                                if (isAllExtensionsSelected) {
-                                                    HomeRepository.setSelectedCloudStreamProvider("off")
-                                                } else {
-                                                    HomeRepository.setSelectedCloudStreamProvider("all")
-                                                }
-                                            }
-                                            .padding(horizontal = 7.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        if (isAllExtensionsSelected) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(22.dp)
-                                                    .background(themeAccent.copy(alpha = 0.25f), RoundedCornerShape(6.dp)),
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.PlayArrow,
-                                                    contentDescription = null,
-                                                    tint = themeAccent,
-                                                    modifier = Modifier.size(14.dp),
-                                                )
-                                            }
-                                        } else {
-                                            Box(
-                                                modifier = Modifier.size(22.dp),
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Layers,
-                                                    contentDescription = null,
-                                                    tint = themeOnSurface.copy(alpha = 0.70f),
-                                                    modifier = Modifier.size(14.dp),
-                                                )
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.width(7.dp))
-                                        Text(
-                                            text = "All Extensions",
-                                            color = if (isAllExtensionsSelected) themeOnSurface else themeOnSurface.copy(alpha = 0.85f),
-                                            fontWeight = if (isAllExtensionsSelected) FontWeight.Bold else FontWeight.Medium,
-                                            fontSize = 12.sp,
-                                            modifier = Modifier.weight(1f),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        if (isAllExtensionsSelected) {
-                                            Icon(
-                                                imageVector = Icons.Rounded.Check,
-                                                contentDescription = null,
-                                                tint = themeAccent,
-                                                modifier = Modifier.size(15.dp),
-                                            )
-                                        } else {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(14.dp)
-                                                    .border(1.2.dp, themeOnSurface.copy(alpha = 0.35f), CircleShape),
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                }
-
-                                if (runnableCloudStreamProviders.isNotEmpty()) {
-                                    Text(
-                                        text = "CLOUDSTREAM",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = themeAccent,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    )
-                                    runnableCloudStreamProviders.forEach { provider ->
-                                        val isSelected = provider.metadata.id.value == selectedCloudStreamProviderId && selectedCloudStreamProviderId != "off"
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .then(
-                                                    if (isSelected) {
-                                                        Modifier.background(themeAccent.copy(alpha = 0.16f))
-                                                    } else {
-                                                        Modifier
-                                                    }
-                                                )
-                                                .clickable {
-                                                    val next = if (isSelected) "off" else provider.metadata.id.value
-                                                    HomeRepository.setSelectedCloudStreamProvider(next)
-                                                }
-                                                .padding(horizontal = 7.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            if (isSelected) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(22.dp)
-                                                        .background(themeAccent.copy(alpha = 0.25f), RoundedCornerShape(6.dp)),
-                                                    contentAlignment = Alignment.Center,
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Rounded.PlayArrow,
-                                                        contentDescription = null,
-                                                        tint = themeAccent,
-                                                        modifier = Modifier.size(14.dp),
-                                                    )
-                                                }
-                                            } else {
-                                                Box(
-                                                    modifier = Modifier.size(22.dp),
-                                                    contentAlignment = Alignment.Center,
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Rounded.Movie,
-                                                        contentDescription = null,
-                                                        tint = themeOnSurface.copy(alpha = 0.70f),
-                                                        modifier = Modifier.size(14.dp),
-                                                    )
-                                                }
-                                            }
-                                            Spacer(modifier = Modifier.width(7.dp))
-                                            Text(
-                                                text = provider.metadata.name,
-                                                color = if (isSelected) themeOnSurface else themeOnSurface.copy(alpha = 0.85f),
-                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                                fontSize = 12.sp,
-                                                modifier = Modifier.weight(1f),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            if (isSelected) {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Check,
-                                                    contentDescription = null,
-                                                    tint = themeAccent,
-                                                    modifier = Modifier.size(15.dp),
-                                                )
-                                            } else {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(14.dp)
-                                                        .border(1.2.dp, themeOnSurface.copy(alpha = 0.35f), CircleShape),
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
+                            if (isAllExtensionsSelected) {
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(themeAccent.copy(alpha = 0.18f))
-                                        .clickable { cloudStreamProviderMenuExpanded = false }
-                                        .padding(vertical = 7.dp),
+                                        .size(22.dp)
+                                        .background(themeAccent.copy(alpha = 0.25f), RoundedCornerShape(6.dp)),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Text(
-                                        text = "Done",
-                                        color = themeAccent,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
+                                    Icon(
+                                        imageVector = Icons.Rounded.PlayArrow,
+                                        contentDescription = null,
+                                        tint = themeAccent,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier.size(22.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Layers,
+                                        contentDescription = null,
+                                        tint = themeOnSurface.copy(alpha = 0.70f),
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(7.dp))
+                            Text(
+                                text = "All Extensions",
+                                color = if (isAllExtensionsSelected) themeOnSurface else themeOnSurface.copy(alpha = 0.85f),
+                                fontWeight = if (isAllExtensionsSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 12.sp,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            if (isAllExtensionsSelected) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Check,
+                                    contentDescription = null,
+                                    tint = themeAccent,
+                                    modifier = Modifier.size(15.dp),
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(14.dp)
+                                        .border(1.2.dp, themeOnSurface.copy(alpha = 0.35f), CircleShape),
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                    }
+
+                    if (providers.isNotEmpty()) {
+                        Text(
+                            text = "CLOUDSTREAM",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = themeAccent,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                        providers.forEach { provider ->
+                            val isSelected = provider.metadata.id.value == selectedProviderId && selectedProviderId != "off"
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .then(
+                                        if (isSelected) {
+                                            Modifier.background(themeAccent.copy(alpha = 0.16f))
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
+                                    .clickable {
+                                        val next = if (isSelected) "off" else provider.metadata.id.value
+                                        onProviderSelected(next)
+                                    }
+                                    .padding(horizontal = 7.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (isSelected) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(22.dp)
+                                            .background(themeAccent.copy(alpha = 0.25f), RoundedCornerShape(6.dp)),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.PlayArrow,
+                                            contentDescription = null,
+                                            tint = themeAccent,
+                                            modifier = Modifier.size(14.dp),
+                                        )
+                                    }
+                                } else {
+                                    Box(
+                                        modifier = Modifier.size(22.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Movie,
+                                            contentDescription = null,
+                                            tint = themeOnSurface.copy(alpha = 0.70f),
+                                            modifier = Modifier.size(14.dp),
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(7.dp))
+                                Text(
+                                    text = provider.metadata.name,
+                                    color = if (isSelected) themeOnSurface else themeOnSurface.copy(alpha = 0.85f),
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Check,
+                                        contentDescription = null,
+                                        tint = themeAccent,
+                                        modifier = Modifier.size(15.dp),
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(14.dp)
+                                            .border(1.2.dp, themeOnSurface.copy(alpha = 0.35f), CircleShape),
                                     )
                                 }
                             }
                         }
                     }
 
-                    val isCs3Active = (selectedCloudStreamProviderId != null && selectedCloudStreamProviderId != "off") && runnableCloudStreamProviders.isNotEmpty()
-                    val selectedCloudStreamProvider = runnableCloudStreamProviders.firstOrNull {
-                        it.metadata.id.value == selectedCloudStreamProviderId && selectedCloudStreamProviderId != "off"
-                    }
-                    val pillLabel = when {
-                        isCs3Active -> {
-                            if (selectedCloudStreamProviderId == "all") "All CS3"
-                            else (selectedCloudStreamProvider?.metadata?.name ?: "CloudStream")
-                        }
-                        else -> "Extensions"
-                    }
-
-                    Row(
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(themeSurface.copy(alpha = 0.92f))
-                            .border(1.2.dp, themeAccent, RoundedCornerShape(20.dp))
-                            .clickable { cloudStreamProviderMenuExpanded = !cloudStreamProviderMenuExpanded }
-                            .padding(horizontal = 11.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(themeAccent.copy(alpha = 0.18f))
+                            .clickable { onMenuExpandedChange(false) }
+                            .padding(vertical = 7.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Layers,
-                            contentDescription = null,
-                            tint = themeAccent,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = pillLabel,
-                            color = themeOnSurface,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            text = "Done",
+                            color = themeAccent,
+                            fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Icon(
-                            imageVector = if (cloudStreamProviderMenuExpanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
-                            contentDescription = null,
-                            tint = themeOnSurface.copy(alpha = 0.85f),
-                            modifier = Modifier.size(15.dp),
                         )
                     }
                 }

@@ -20,7 +20,6 @@ import nuvio.composeapp.generated.resources.compose_settings_page_whats_new
 import nuvio.composeapp.generated.resources.whats_new_root_description
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
 import nuvio.composeapp.generated.resources.about_supporters_contributors_subtitle
-import nuvio.composeapp.generated.resources.compose_about_made_with
 import nuvio.composeapp.generated.resources.compose_about_version_format
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_privacy_policy
@@ -92,20 +91,31 @@ internal fun LazyListScope.settingsFooterContent(isTablet: Boolean) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = if (isTablet) 20.dp else 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            MemberBrandWordmark(
-                height = if (isTablet) 30.dp else 26.dp,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+            Text(
+                text = "Nuvio Enhanced",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                ),
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
             )
             androidx.compose.foundation.layout.Spacer(
-                modifier = Modifier.height(if (isTablet) 10.dp else 8.dp),
+                modifier = Modifier.height(2.dp),
             )
             Text(
-                text = stringResource(Res.string.compose_about_made_with),
+                text = "by RAJA JI",
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
+            )
+            androidx.compose.foundation.layout.Spacer(
+                modifier = Modifier.height(4.dp),
             )
             Text(
                 text = stringResource(

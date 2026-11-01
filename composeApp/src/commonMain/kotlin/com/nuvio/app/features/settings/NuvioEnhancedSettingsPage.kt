@@ -786,6 +786,10 @@ private fun NuvioEnhancedSettingsPageContent(
                         title = stringResource(Res.string.nuvio_enhanced_player_clock_title),
                         description = stringResource(Res.string.nuvio_enhanced_player_clock_desc),
                         checked = settings.playerClockEndTimeEnabled,
+                        // PlayerControls shows the clock only when the status
+                        // overlay is OFF, so disable this row while the
+                        // overlay is ON instead of letting it look effective.
+                        enabled = !settings.playerStatusOverlayEnabled,
                         isTablet = isTablet,
                         highlighted = isNew(NuvioEnhancedFeature.PlayerTimeOverlay),
                         onCheckedChange = {

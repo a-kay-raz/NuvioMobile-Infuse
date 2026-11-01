@@ -1206,6 +1206,10 @@ fun HomeScreen(
                                     // (poster/showcase artwork, display mode, compact, ratings placement,
                                     // overview/details toggles, showcase trailer/sound) instead of only
                                     // forcing FULL_BLEED, which is already the default and changed nothing.
+                                    // Screenshot OG look: logo + centered metadata + ratings row + dots
+                                    // only — no overview paragraph and no Details pill, so those are
+                                    // forced OFF here (the previous true/true forced them ON, which is
+                                    // why ON looked almost identical to Enhanced defaults).
                                     trailerPlaybackEnabled = (if (enhancedSettings.originalNuvioHeroBannerEnabled) {
                                         homeSettingsUiState.heroTrailerPlaybackEnabled
                                     } else {
@@ -1220,12 +1224,12 @@ fun HomeScreen(
                                         enhancedSettings.streamingShowcaseVideoPreviewSoundEnabled || homeSettingsUiState.heroTrailerStartUnmuted
                                     },
                                     showImdbRating = if (enhancedSettings.originalNuvioHeroBannerEnabled) {
-                                        homeHeroState.showImdbRating
+                                        true
                                     } else {
                                         homeHeroState.showImdbRating && enhancedSettings.showHeroRatings
                                     },
                                     showMdbListRatings = if (enhancedSettings.originalNuvioHeroBannerEnabled) {
-                                        homeHeroState.showMdbListRatings
+                                        true
                                     } else {
                                         homeHeroState.showMdbListRatings && enhancedSettings.showHeroRatings
                                     },
@@ -1236,8 +1240,8 @@ fun HomeScreen(
                                     } else {
                                         enhancedSettings.heroArtworkSource
                                     },
-                                    showHeroOverview = if (enhancedSettings.originalNuvioHeroBannerEnabled) true else enhancedSettings.showHeroOverview,
-                                    showHeroDetailsButton = if (enhancedSettings.originalNuvioHeroBannerEnabled) true else enhancedSettings.showHeroDetailsButton,
+                                    showHeroOverview = if (enhancedSettings.originalNuvioHeroBannerEnabled) false else enhancedSettings.showHeroOverview,
+                                    showHeroDetailsButton = if (enhancedSettings.originalNuvioHeroBannerEnabled) false else enhancedSettings.showHeroDetailsButton,
                                     heroRefreshHapticsEnabled = if (enhancedSettings.originalNuvioHeroBannerEnabled) true else enhancedSettings.heroRefreshHapticsEnabled,
                                     heroDisplayMode = if (enhancedSettings.originalNuvioHeroBannerEnabled) {
                                         com.nuvio.app.features.settings.NuvioHeroDisplayMode.Balanced

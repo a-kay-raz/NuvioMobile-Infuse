@@ -278,7 +278,16 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         val playbackKey = activePlaybackKey
         val initialPositionRequestKey = currentInitialPositionRequestKey()
         if (playerSurfaceSourceUrl != null) {
-            key(playbackKey) {
+            // Source-only key, NOT the full playbackKey: playbackKey includes
+            // playbackEngineOverride, so keying on it would dispose and recreate
+            // this whole subtree on a manual engine switch, which re-runs the
+            // source-change LaunchedEffect below and immediately clears the
+            // override that just set it — the switch would appear to do nothing.
+            // With a source-only key, an engine switch only changes the
+            // playbackEngine passed to PlatformPlayerSurface, which switches
+            // its ExoPlayer/Libmpv branch, while a real source change still
+            // recreates the subtree and clears the override.
+            key(playbackKey.copy(playbackEngine = null)) {
                 val active = remember { mutableStateOf(true) }
                 DisposableEffect(Unit) {
                     onDispose { active.value = false }

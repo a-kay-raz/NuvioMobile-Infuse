@@ -2,12 +2,12 @@
 
   <img src="https://nuvio.tv/assets/nuvio-app-logo-wordmark.webp" alt="Nuvio Enhanced" width="320" />
 
-  <h1>NuvioMobile-Infuse</h1> 
+  <h1>NuvioMobile-Enhanced+</h1> 
 
   <p>
     An advanced, feature-packed fork of <a href="https://github.com/NuvioMedia/NuvioMobile">Nuvio Mobile</a> that keeps pace with upstream while introducing a pure <b>CloudStream 3 (CS3)</b> & <b>Stremio</b> engine, out-of-the-box tracking integrations, hardware volume boost, and deep platform polish.
     <br /><br />
-    Bring your own sources. NuvioMobile-Infuse transforms them into a unified streaming library with rich artwork, ratings, synchronized subtitles, and your progress saved across all devices.
+    Bring your own sources. NuvioMobile-Enhanced+ transforms them into a unified streaming library with rich artwork, ratings, synchronized subtitles, and your progress saved across all devices.
   </p>
 
   <p>
@@ -109,7 +109,7 @@ Upstream Nuvio lacks Live TV support. Nuvio Enhanced integrates an entire IPTV s
 
 ---
 
-## ✨ What NuvioMobile-Infuse Adds on Top
+## ✨ What NuvioMobile-Enhanced+ Adds on Top
 
 These are the custom changes in this repository, beyond the sections above:
 

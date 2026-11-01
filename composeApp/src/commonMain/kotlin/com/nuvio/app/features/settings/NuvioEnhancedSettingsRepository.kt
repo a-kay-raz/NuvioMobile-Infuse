@@ -344,13 +344,34 @@ internal object NuvioEnhancedSettingsRepository {
         copy(heroDisplayMode = mode)
     }
 
+    // Hero artwork source and Poster-art toggle are the same state seen from
+    // two controls: previously the choice was dead while Poster was ON
+    // (default ON), because HomeScreen checked Poster first, and turning
+    // Poster OFF was dead while the saved choice was Poster. Keep them in
+    // sync so either control actually changes the hero: choosing Backdrop
+    // turns Poster OFF, choosing Poster turns Poster ON (and Showcase OFF,
+    // like the Poster toggle does), and turning Poster OFF falls back to
+    // Backdrop instead of leaving the saved Poster choice in place.
     fun setHeroArtworkSource(source: NuvioHeroArtworkSource) = update {
-        copy(heroArtworkSource = source)
+        copy(
+            heroArtworkSource = source,
+            posterArtHeroEnabled = source == NuvioHeroArtworkSource.Poster,
+            streamingShowcaseHeroEnabled = if (source == NuvioHeroArtworkSource.Poster) {
+                false
+            } else {
+                streamingShowcaseHeroEnabled
+            },
+        )
     }
 
     fun setPosterArtHeroEnabled(enabled: Boolean) = update {
         copy(
             posterArtHeroEnabled = enabled,
+            heroArtworkSource = if (enabled) {
+                NuvioHeroArtworkSource.Poster
+            } else {
+                NuvioHeroArtworkSource.Backdrop
+            },
             streamingShowcaseHeroEnabled = if (enabled) false else streamingShowcaseHeroEnabled,
         )
     }

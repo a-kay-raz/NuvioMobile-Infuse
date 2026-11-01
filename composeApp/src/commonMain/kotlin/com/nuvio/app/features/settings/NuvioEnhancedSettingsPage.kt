@@ -568,6 +568,10 @@ private fun NuvioEnhancedSettingsPageContent(
                     title = stringResource(Res.string.nuvio_enhanced_hero_refresh_haptics_title),
                     description = stringResource(Res.string.nuvio_enhanced_hero_refresh_haptics_desc),
                     checked = settings.heroRefreshHapticsEnabled,
+                    // Like the other hero visual rows, disabled under Original
+                    // hero: HomeScreen forces haptics ON there, so toggling
+                    // this row under OG previously did nothing.
+                    enabled = heroVisualControlsEnabled,
                     isTablet = isTablet,
                     highlighted = isNew(NuvioEnhancedFeature.HeroExperienceControls),
                     onCheckedChange = {

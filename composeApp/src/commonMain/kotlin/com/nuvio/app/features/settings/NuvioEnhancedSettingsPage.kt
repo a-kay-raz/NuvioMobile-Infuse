@@ -765,11 +765,17 @@ private fun NuvioEnhancedSettingsPageContent(
                         SettingsSwitchRow(
                             title = stringResource(Res.string.nuvio_enhanced_seek_preview_title),
                             description = stringResource(Res.string.nuvio_enhanced_seek_preview_desc),
-                            checked = settings.seekPreviewEnabled,
+                            // The player reads PlayerSettingsRepository.seekPreviewEnabled,
+                            // not the Enhanced copy — binding to the Enhanced field
+                            // made this row dead. Bind to the player state (like
+                            // the Parental Guide row above) and keep the Enhanced
+                            // copy in sync, so both settings screens agree.
+                            checked = playerSettings.seekPreviewEnabled,
                             isTablet = isTablet,
                             highlighted = isNew(NuvioEnhancedFeature.SeekPreview),
                             onCheckedChange = {
                                 markSeen(NuvioEnhancedFeature.SeekPreview)
+                                PlayerSettingsRepository.setSeekPreviewEnabled(it)
                                 NuvioEnhancedSettingsRepository.setSeekPreviewEnabled(it)
                             },
                         )

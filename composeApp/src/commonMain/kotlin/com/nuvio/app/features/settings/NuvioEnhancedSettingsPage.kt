@@ -628,10 +628,17 @@ private fun NuvioEnhancedSettingsPageContent(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
+                // Release Radar filters only matter when Home signals are
+                // ON (and Home features are ON) — HomeScreen returns an
+                // empty radar list otherwise, so disable these rows then,
+                // like the other dependent rows in this page.
+                val releaseRadarFiltersEnabled = settings.enhancedHomeFeaturesEnabled &&
+                    settings.releaseRadarHomeSignalsEnabled
                 SettingsSwitchRow(
                     title = stringResource(Res.string.nuvio_enhanced_library_only_radar_title),
                     description = stringResource(Res.string.nuvio_enhanced_library_only_radar_desc),
                     checked = settings.releaseRadarLibraryOnly,
+                    enabled = releaseRadarFiltersEnabled,
                     isTablet = isTablet,
                     highlighted = isNew(NuvioEnhancedFeature.ReleaseRadarFilters),
                     onCheckedChange = {
@@ -644,6 +651,7 @@ private fun NuvioEnhancedSettingsPageContent(
                     title = stringResource(Res.string.nuvio_enhanced_radar_window_title),
                     description = stringResource(Res.string.nuvio_enhanced_radar_window_desc),
                     selected = settings.releaseRadarWindowDays,
+                    enabled = releaseRadarFiltersEnabled,
                     options = listOf(
                         EnhancedChoiceOption(7, stringResource(Res.string.nuvio_enhanced_radar_window_7_days)),
                         EnhancedChoiceOption(30, stringResource(Res.string.nuvio_enhanced_radar_window_30_days)),
@@ -660,6 +668,7 @@ private fun NuvioEnhancedSettingsPageContent(
                     title = stringResource(Res.string.nuvio_enhanced_radar_content_title),
                     description = stringResource(Res.string.nuvio_enhanced_radar_content_desc),
                     selected = settings.releaseRadarContentFilter,
+                    enabled = releaseRadarFiltersEnabled,
                     options = listOf(
                         EnhancedChoiceOption(
                             NuvioReleaseRadarContentFilter.All,

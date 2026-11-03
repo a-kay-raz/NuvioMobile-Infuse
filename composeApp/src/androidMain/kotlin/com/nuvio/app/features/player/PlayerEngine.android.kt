@@ -1590,7 +1590,13 @@ private fun LibmpvPlayerSurface(
     }
 
     val audioFocus = remember(context) {
-        PlayerAudioFocus(context) { playerViewRef?.setPaused(true) }
+        PlayerAudioFocus(
+            context = context,
+            onLoss = { playerViewRef?.setPaused(true) },
+            // Resume only to the state the player was supposed to be in
+            // (shouldPlay), never to playing when the user had paused.
+            onGain = { playerViewRef?.setPaused(!latestPlayWhenReady.value) },
+        )
     }
 
     DisposableEffect(audioFocus) {
@@ -1733,6 +1739,18 @@ private fun LibmpvPlayerSurface(
                             latestOnSnapshot.value(snapshot)
                             nowPlayingController?.syncPlayback(snapshot)
                             view.keepScreenOn = snapshot.isPlaying || snapshot.isLoading
+                            // Previously END_FILE only logged: a file ending far
+                            // before its duration (server cut, segment failure)
+                            // silently stopped playback with no error, no retry
+                            // and no Exo failover. Treat that as an error so the
+                            // normal error path (credential refresh, then
+                            // failover to Exo when enabled) can run. A genuine
+                            // end (position within 10s of duration) is untouched.
+                            if (snapshot.isEnded && snapshot.durationMs > 0L &&
+                                snapshot.positionMs < snapshot.durationMs - 10_000L
+                            ) {
+                                latestOnError.value("Playback ended before the end of the video")
+                            }
                         }
                     }
                 }
@@ -1840,11 +1858,50 @@ private fun LibmpvPlayerSurface(
 
     LaunchedEffect(playerViewRef) {
         val view = playerViewRef ?: return@LaunchedEffect
+        // Stall watchdog: Libmpv has no network timeout, so a server that
+        // stops sending (but keeps the connection open) leaves the player in
+        // paused-for-cache / loading forever with no error. If loading with
+        // play requested and neither position nor buffered position moves
+        // for 30s, report it as an error once, so the normal error path
+        // (failover to Exo when enabled, otherwise a visible error with
+        // retry) runs instead of an infinite buffering screen. Progress
+        // resets the timer; a reported stall is not re-reported until
+        // progress resumes.
+        var lastProgressPositionMs = -1L
+        var lastProgressBufferedMs = -1L
+        var stallSinceMs = 0L
+        var stallReported = false
         while (isActive) {
             val snapshot = view.snapshot()
             latestOnSnapshot.value(snapshot)
             nowPlayingController?.syncPlayback(snapshot)
             view.keepScreenOn = snapshot.isPlaying || snapshot.isLoading
+            val nowMs = SystemClock.elapsedRealtime()
+            if (snapshot.isLoading && !snapshot.isEnded && latestPlayWhenReady.value) {
+                if (snapshot.positionMs != lastProgressPositionMs ||
+                    snapshot.bufferedPositionMs != lastProgressBufferedMs
+                ) {
+                    lastProgressPositionMs = snapshot.positionMs
+                    lastProgressBufferedMs = snapshot.bufferedPositionMs
+                    stallSinceMs = nowMs
+                    stallReported = false
+                } else if (stallSinceMs == 0L) {
+                    stallSinceMs = nowMs
+                } else if (!stallReported && nowMs - stallSinceMs >= 30_000L) {
+                    stallReported = true
+                    InAppLogger.warn(
+                        "MPV/Android",
+                        "stall watchdog: no position/buffer progress for 30s " +
+                            "positionMs=${snapshot.positionMs} bufferedMs=${snapshot.bufferedPositionMs}",
+                    )
+                    latestOnError.value("Playback stalled while buffering")
+                }
+            } else {
+                lastProgressPositionMs = snapshot.positionMs
+                lastProgressBufferedMs = snapshot.bufferedPositionMs
+                stallSinceMs = 0L
+                stallReported = false
+            }
             delay(250L)
         }
     }

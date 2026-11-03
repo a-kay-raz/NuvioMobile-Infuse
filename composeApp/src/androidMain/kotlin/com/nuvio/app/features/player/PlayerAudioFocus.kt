@@ -15,13 +15,21 @@ internal val playbackAudioAttributes: AudioAttributes = AudioAttributes.Builder(
     .build()
 
 @OptIn(UnstableApi::class)
-internal class PlayerAudioFocus(context: Context, onLoss: () -> Unit) {
+internal class PlayerAudioFocus(
+    context: Context,
+    onLoss: () -> Unit,
+    // Previously loss paused playback with no resume path, so a transient
+    // loss (notification/call) left Libmpv paused forever until manual play.
+    onGain: () -> Unit = {},
+) {
     private val audioManager = AudioManagerCompat.getAudioManager(context)
     private val request = AudioFocusRequestCompat.Builder(AudioManagerCompat.AUDIOFOCUS_GAIN)
         .setAudioAttributes(playbackAudioAttributes)
         .setOnAudioFocusChangeListener { focusChange ->
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
                 onLoss()
+            } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                onGain()
             }
         }
         .build()

@@ -118,6 +118,7 @@ open class MainActivity : AppCompatActivity() {
         AppSystemUiController.bind(this)
         ThemeSettingsStorage.initialize(applicationContext)
         NuvioEnhancedSettingsStorage.initialize(applicationContext)
+        com.nuvio.app.core.ui.background.AppBackgroundStorage.initialize(applicationContext)
         AppIconPlatform.initialize(applicationContext)
         SentrySettingsStorage.initialize(applicationContext)
         SentryInitializer.start(application)

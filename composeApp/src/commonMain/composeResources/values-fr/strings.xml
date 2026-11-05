@@ -2196,17 +2196,6 @@
     <!-- IntroDB settings -->
     <string name="settings_playback_introdb_invalid_api_key">Clé API invalide ou échec de connexion</string>
     <!-- TMDB placeholders & trakt status (restored after cherry-pick) -->
-    <string name="collections_editor_tmdb_country_placeholder">US, KR, JP, IN</string>
-    <string name="collections_editor_tmdb_date_from_placeholder">2020-01-01</string>
-    <string name="collections_editor_tmdb_date_to_placeholder">2024-12-31</string>
-    <string name="collections_editor_tmdb_genres_movie_placeholder">28,12</string>
-    <string name="collections_editor_tmdb_genres_series_placeholder">18,35</string>
-    <string name="collections_editor_tmdb_language_placeholder">en, ko, ja, hi</string>
-    <string name="collections_editor_tmdb_sort_original">Ordre original</string>
-    <string name="collections_editor_tmdb_votes_min_placeholder">100</string>
-    <string name="collections_editor_tmdb_year_placeholder">2024</string>
-    <string name="trakt_connected">Connecté à Trakt</string>
-    <string name="trakt_disconnected">Déconnecté de Trakt</string>
     <string name="addons_manifest_missing_field">Champ «&#160;%1$s&#160;» manquant dans le manifeste</string>
     <string name="collections_editor_tmdb_collection_title_format">Collection TMDB %1$s</string>
     <string name="collections_editor_tmdb_director_title_format">Réalisateur TMDB %1$s</string>

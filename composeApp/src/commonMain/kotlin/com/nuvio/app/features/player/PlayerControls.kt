@@ -234,7 +234,7 @@ internal fun PlayerControlsShell(
             onSourcesClick = onSourcesClick,
             onEpisodesClick = onEpisodesClick,
             onChaptersClick = onChaptersClick,
-            chapters = chapters,
+            chapters = playbackSnapshot.chapters,
             onSpeedClick = onSpeedClick ?: {},
             onResizeModeClick = onResizeModeClick,
             onVideoSettingsClick = onVideoSettingsClick,

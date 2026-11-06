@@ -95,8 +95,6 @@ import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.isWaitingForFirstEnabledManifest
 import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.catalog.CatalogTarget
-import com.nuvio.app.features.livetv.LiveTvChannel
-import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.cloud.CloudLibraryContentType
 import com.nuvio.app.features.cloud.CloudLibraryFile
 import com.nuvio.app.features.cloud.CloudLibraryItem

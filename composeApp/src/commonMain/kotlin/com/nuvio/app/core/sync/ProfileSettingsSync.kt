@@ -227,6 +227,11 @@ object ProfileSettingsSync {
             CustomPosterUrlRepository.enabledScreens.map { "custom_poster_screens" },
             CardDepthStyleRepository.uiState.map { "card_depth_style" },
             PlayerSettingsRepository.uiState.map { "player" },
+            // Nuvio Enhanced settings were missing here: changing an Enhanced
+            // toggle alone never emitted, so it never pushed to the server,
+            // while every restart's pull applied the server's stale/defaults
+            // blob over the local values — settings reset on every restart.
+            NuvioEnhancedSettingsRepository.uiState.map { "nuvio_enhanced" },
             StreamBadgeSettingsRepository.uiState.map { "stream_badges" },
             DebridSettingsRepository.uiState.map { "debrid" },
             TmdbSettingsRepository.uiState.map { "tmdb" },

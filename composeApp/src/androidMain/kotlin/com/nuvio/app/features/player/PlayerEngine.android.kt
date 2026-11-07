@@ -584,8 +584,10 @@ private fun ExoPlayerSurface(
                 "libassRenderMode=$libassRenderMode mapDV7ToHevc=${playerSettings.mapDV7ToHevc}",
         )
 
+        // Audio focus is handled by PlayerAudioFocus, so a denied request (e.g. during a call)
+        // doesn't stop playback.
         val playerBuilder = ExoPlayer.Builder(context)
-            .setAudioAttributes(playbackAudioAttributes, true)
+            .setAudioAttributes(playbackAudioAttributes, false)
             .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
 
@@ -712,6 +714,19 @@ private fun ExoPlayerSurface(
         onDispose {
             cleanupAudioBoost()
         }
+    }
+
+    val audioFocus = remember(context, exoPlayer) {
+        PlayerAudioFocus(
+            context = context,
+            playWhenReady = { exoPlayer.playWhenReady },
+            pause = exoPlayer::pause,
+            resume = exoPlayer::play,
+        )
+    }
+
+    DisposableEffect(audioFocus) {
+        onDispose { audioFocus.abandon() }
     }
 
     LaunchedEffect(exoPlayer, resolvedMediaItem, initialPositionRequestKey, playbackResumeGeneration) {
@@ -925,6 +940,10 @@ private fun ExoPlayerSurface(
                 }
                 syncPlayerViewKeepScreenOn()
                 dispatchExoPlayerSnapshot()
+            }
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                if (playWhenReady) audioFocus.request()
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -1696,13 +1715,13 @@ private fun LibmpvPlayerSurface(
         }
     }
 
+    val mpvPaused = remember { AtomicBoolean(true) }
     val audioFocus = remember(context) {
         PlayerAudioFocus(
             context = context,
-            onLoss = { playerViewRef?.setPaused(true) },
-            // Resume only to the state the player was supposed to be in
-            // (shouldPlay), never to playing when the user had paused.
-            onGain = { playerViewRef?.setPaused(!latestPlayWhenReady.value) },
+            playWhenReady = { !mpvPaused.get() },
+            pause = { playerViewRef?.setPaused(true) },
+            resume = { playerViewRef?.setPaused(false) },
         )
     }
 
@@ -1764,8 +1783,9 @@ private fun LibmpvPlayerSurface(
                             "elapsedMs=${diagnosticElapsedSince(playbackDiagnostics.prepareStartedAtMs)}",
                     )
                 }
-                if (property == "pause" && !value) {
-                    coroutineScope.launch(Dispatchers.Main.immediate) { audioFocus.request() }
+                if (property == "pause") {
+                    mpvPaused.set(value)
+                    if (!value) coroutineScope.launch(Dispatchers.Main.immediate) { audioFocus.request() }
                 }
                 if (property == "eof-reached" || property == "pause" || property == "paused-for-cache" || property == "seeking") {
                     dispatchSnapshot(updateKeepScreenOn = true)

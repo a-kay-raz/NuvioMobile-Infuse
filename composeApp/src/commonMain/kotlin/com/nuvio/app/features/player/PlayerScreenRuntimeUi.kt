@@ -323,6 +323,8 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
                 DisposableEffect(Unit) {
                     onDispose { active.value = false }
                 }
+                val animeContentState = remember { mutableStateOf(false) }
+                if (isAnimePlayback && !animeContentState.value) animeContentState.value = true
                 PlatformPlayerSurface(
                     sourceUrl = playerSurfaceSourceUrl,
                     sourceAudioUrl = activeSourceAudioUrl,
@@ -336,6 +338,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
                     initialPositionRequestKey = initialPositionRequestKey,
                     resizeMode = if (partyPanelInset > 0.dp) PlayerResizeMode.Fit else resizeMode,
                     playbackEngine = playbackEngineOverride ?: resolvedAutoEngine,
+                    animeContent = animeContentState.value,
                     onInitialPositionHandled = { key, handled ->
                         if (active.value && playbackKey == activePlaybackKey && key == currentInitialPositionRequestKey()) {
                             initialSeekApplied = handled
@@ -642,7 +645,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
                 { showUserRatingSheet = true }
             } else null,
             userRating = userRating,
-            onVideoSettingsClick = if (isIos) {
+            onVideoSettingsClick = if (isIos || isAnimePlayback) {
                 {
                     showVideoSettingsModal = true
                     controlsVisible = true
@@ -1049,6 +1052,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
             playerController?.configureIosVideoOutput(PlayerSettingsRepository.uiState.value)
         },
         onVideoSettingsModalDismissed = { showVideoSettingsModal = false },
+        animeEnhancementStatus = playbackSnapshot.animeEnhancement,
         showSourcesPanel = showSourcesPanel,
         sourceStreamsState = sourceStreamsState,
         contentTitle = title,

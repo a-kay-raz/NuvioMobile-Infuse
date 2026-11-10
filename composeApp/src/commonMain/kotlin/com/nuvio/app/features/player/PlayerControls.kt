@@ -498,6 +498,7 @@ internal fun PlayerControlsShell(
                             badges = badges,
                             qualityLabel = qualityLabel,
                             onHeightChanged = { titleDetailsHeight = it },
+                            animeEnhancement = playbackSnapshot.animeEnhancement,
                         )
                     }
                     Row(

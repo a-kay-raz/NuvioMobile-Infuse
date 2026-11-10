@@ -87,6 +87,7 @@ internal fun PlayerTimelineDetails(
     modifier: Modifier = Modifier,
     titleLogo: String? = null,
     showTitleLogo: Boolean = false,
+    animeEnhancement: AnimeEnhancementStatus? = null,
 ) {
     val typeScale = MaterialTheme.nuvioTypeScale
     val density = LocalDensity.current
@@ -162,6 +163,8 @@ internal fun PlayerTimelineDetails(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        // Badges already render in the format-pills row above; only the Anime4K badge is new here.
+        AnimeEnhancementBadge(status = animeEnhancement, modifier = Modifier.padding(vertical = 4.dp))
         if (!releaseInfo.isNullOrBlank()) {
             Text(
                 text = releaseInfo,

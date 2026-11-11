@@ -39,6 +39,7 @@ import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Groups
@@ -185,6 +186,7 @@ internal fun PlayerControlsShell(
     onEpisodesClick: (() -> Unit)? = null,
     onChaptersClick: (() -> Unit)? = null,
     onLiveChannelsClick: (() -> Unit)? = null,
+    onDiscTitlesClick: (() -> Unit)? = null,
     qualityLabel: String? = null,
     onQualityClick: (() -> Unit)? = null,
     onOpenInExternalPlayer: (() -> Unit)? = null,
@@ -223,6 +225,7 @@ internal fun PlayerControlsShell(
             onLockToggle = onLockToggle,
             onPartyClick = onPartyClick,
             partyActive = partyActive,
+            onDiscTitlesClick = onDiscTitlesClick,
             onNextEpisodeClick = onNextEpisodeClick,
             onTogglePlayback = onTogglePlayback,
             onSeekBack = onSeekBack,
@@ -352,6 +355,7 @@ internal fun PlayerControlsShell(
                     randomNextEpisodeMode = randomNextEpisodeMode,
                     onRandomNextEpisodeModeToggle = onRandomNextEpisodeModeToggle,
                     onSwitchEngineClick = onSwitchEngineClick,
+                    onDiscTitlesClick = onDiscTitlesClick,
                     onBack = onBack,
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -365,6 +369,14 @@ internal fun PlayerControlsShell(
                         isLocked = isLocked,
                         onLockToggle = onLockToggle,
                         onBack = onBack,
+                        onCastClick = onCastClick,
+                        isCasting = isCasting,
+                        onPartyClick = onPartyClick,
+                        partyActive = partyActive,
+                        onOrientationToggleClick = onOrientationToggleClick,
+                        isPortraitPlayback = isPortraitPlayback,
+                        onPictureInPictureClick = onPictureInPictureClick,
+                        onDiscTitlesClick = onDiscTitlesClick,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .windowInsetsPadding(playerToolbarTopInsets(metrics))
@@ -617,6 +629,7 @@ private fun PlayerHeader(
     randomNextEpisodeMode: Boolean = false,
     onRandomNextEpisodeModeToggle: (() -> Unit)? = null,
     onSwitchEngineClick: (() -> Unit)? = null,
+    onDiscTitlesClick: (() -> Unit)? = null,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -718,6 +731,15 @@ private fun PlayerHeader(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (onDiscTitlesClick != null) {
+                        PlayerHeaderIconButton(
+                            icon = Icons.Rounded.Album,
+                            contentDescription = stringResource(Res.string.player_disc_titles),
+                            buttonSize = metrics.headerIconSize + 16.dp,
+                            iconSize = metrics.headerIconSize,
+                            onClick = onDiscTitlesClick,
+                        )
+                    }
                     val topButtons = PlayerSettingsRepository.uiState.collectAsState().value.legacyTopButtons
                     topButtons.visibleButtons.forEach { button ->
                         key(button) {

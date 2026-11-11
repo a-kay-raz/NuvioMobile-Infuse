@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.ListAlt
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.automirrored.rounded.Toc
+import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.CastConnected
@@ -82,7 +83,15 @@ internal fun PlayerToolbar(
     isLocked: Boolean,
     onLockToggle: () -> Unit,
     onBack: () -> Unit,
+    onCastClick: (() -> Unit)? = null,
+    isCasting: Boolean = false,
     modifier: Modifier = Modifier,
+    onPartyClick: (() -> Unit)? = null,
+    partyActive: Boolean = false,
+    onOrientationToggleClick: (() -> Unit)? = null,
+    isPortraitPlayback: Boolean = false,
+    onPictureInPictureClick: (() -> Unit)? = null,
+    onDiscTitlesClick: (() -> Unit)? = null,
 ) {
     // Top actions moved to the bottom actions pill, except lock, which is
     // reverted to its original top position, in its glass capsule, before back.
@@ -96,6 +105,42 @@ internal fun PlayerToolbar(
             ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            onDiscTitlesClick?.let {
+                PlayerAction(
+                    description = stringResource(Res.string.player_disc_titles),
+                    icon = Icons.Rounded.Album,
+                    onClick = it,
+                )
+            }
+            onPictureInPictureClick?.let {
+                PlayerAction(
+                    description = stringResource(Res.string.compose_player_picture_in_picture),
+                    icon = Icons.Rounded.PictureInPictureAlt,
+                    onClick = it,
+                )
+            }
+            onOrientationToggleClick?.let {
+                PlayerAction(
+                    description = stringResource(playerOrientationToggleLabel(isPortraitPlayback)),
+                    icon = playerOrientationToggleIcon(isPortraitPlayback),
+                    onClick = it,
+                )
+            }
+            if (onPartyClick != null) {
+                PlayerAction(
+                    description = stringResource(Res.string.party_title),
+                    icon = Icons.Rounded.Groups,
+                    onClick = onPartyClick,
+                    tint = if (partyActive) MaterialTheme.colorScheme.primary else Color.White,
+                )
+            }
+            onCastClick?.let {
+                PlayerAction(
+                    description = stringResource(Res.string.player_cast),
+                    icon = if (isCasting) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
+                    onClick = it,
+                )
+            }
             PlayerAction(
                 description = stringResource(
                     if (isLocked) Res.string.compose_player_unlock_controls else Res.string.compose_player_lock_controls,

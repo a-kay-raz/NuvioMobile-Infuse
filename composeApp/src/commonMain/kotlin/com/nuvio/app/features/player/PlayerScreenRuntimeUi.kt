@@ -339,6 +339,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
                     resizeMode = if (partyPanelInset > 0.dp) PlayerResizeMode.Fit else resizeMode,
                     playbackEngine = playbackEngineOverride ?: resolvedAutoEngine,
                     animeContent = animeContentState.value,
+                    discPlaybackEnabled = !isLiveTvPlayback && !parentMetaType.equals("live", ignoreCase = true),
                     onInitialPositionHandled = { key, handled ->
                         if (active.value && playbackKey == activePlaybackKey && key == currentInitialPositionRequestKey()) {
                             initialSeekApplied = handled
@@ -668,6 +669,11 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
                     openChaptersPanel()
                 }
             } else null,
+            onDiscTitlesClick = if (!isLiveTvPlayback && playbackSnapshot.discTitles.size > 1) {
+                {
+                    openDiscTitlesPanel()
+                }
+            } else null,
             onLiveChannelsClick = if (isLiveTvPlayback) {
                 {
                     showLiveChannelsPanel = true
@@ -952,8 +958,28 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
     } else {
         Snapshot.withoutReadObservation { scrubbingPositionMs ?: playbackSnapshot.positionMs }
     }
-    val snapshotChapters by remember(this) { derivedStateOf { playbackSnapshot.chapters } }
     val snapshotMediaInfoJson by remember(this) { derivedStateOf { playbackSnapshot.mediaInfoJson } }
+    PlayerChaptersPanel(
+        visible = showChaptersPanel && chapters.isNotEmpty(),
+        chapters = chapters,
+        positionMs = displayedPositionMs,
+        durationMs = playbackSnapshot.durationMs,
+        onChapterSelected = { selectChapter(it) },
+        onDismiss = {
+            showChaptersPanel = false
+            controlsVisible = true
+        },
+    )
+    PlayerDiscTitlesPanel(
+        visible = showDiscTitlesPanel && playbackSnapshot.discTitles.size > 1,
+        titles = playbackSnapshot.discTitles,
+        activeIndex = playbackSnapshot.activeDiscTitleIndex,
+        onTitleSelected = { selectDiscTitle(it) },
+        onDismiss = {
+            showDiscTitlesPanel = false
+            controlsVisible = true
+        },
+    )
     PlayerScreenModalHosts(
         pendingP2pSwitch = pendingP2pSwitch,
         onPendingP2pSwitchChanged = { pendingP2pSwitch = it },
@@ -1160,20 +1186,6 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
             showEpisodesPanel = false
             episodeStreamsPanelState = EpisodeStreamsPanelState()
             PlayerStreamsRepository.clearEpisodeStreams()
-            controlsVisible = true
-        },
-        showChaptersPanel = showChaptersPanel,
-        chapters = snapshotChapters,
-        onChapterSelected = { chapter ->
-            val targetMs = chapter.startMs.coerceAtLeast(0L)
-            finishTimelineScrub(targetMs)
-            playerController?.seekTo(targetMs)
-            scheduleProgressSyncAfterSeek()
-            showChaptersPanel = false
-            controlsVisible = true
-        },
-        onChaptersPanelDismissed = {
-            showChaptersPanel = false
             controlsVisible = true
         },
         showSubmitIntroModal = showSubmitIntroModal,

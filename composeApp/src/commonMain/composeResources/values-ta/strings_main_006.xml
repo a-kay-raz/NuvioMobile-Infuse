@@ -34,8 +34,6 @@
     <string name="compose_settings_root_advanced_description">தொடக்க மற்றும் சுயவிவரச் செயல்பாடுகள்.</string>
     <string name="compose_settings_root_advanced_section">மேம்பட்டவை</string>
     <string name="compose_settings_root_appearance_description">முகப்பு, ஸ்ட்ரீம்கள், தொகுப்புகள் மற்றும் விவரப் பக்கங்கள்</string>
-    <string name="compose_settings_root_check_updates_description">சமீபத்திய வெளியீட்டைப் பதிவிறக்கவும்</string>
-    <string name="compose_settings_root_check_updates_title">புதுப்பிப்புகளைச் சரிபார்க்கவும்</string>
     <string name="compose_settings_root_content_discovery_description">துணைநிரல்கள் மற்றும் கண்டறிதல் ஆதாரங்களை நிர்வகிக்கவும்.</string>
     <string name="compose_settings_root_content_discovery_description_appstore">துணைநிரல்களை நிர்வகித்து Nuvio-வில் எது தோன்ற வேண்டும் என்பதைத் தேர்ந்தெடுக்கவும்.</string>
     <string name="compose_settings_root_downloads_description">பதிவிறக்கிய திரைப்படங்கள் மற்றும் எபிசோடுகளை நிர்வகிக்கவும்.</string>

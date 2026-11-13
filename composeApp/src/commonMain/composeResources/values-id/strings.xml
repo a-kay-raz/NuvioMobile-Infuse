@@ -2810,7 +2810,6 @@
     <string name="whats_new_status_up_to_date_all">Anda sudah memakai versi terbaru.</string>
     <string name="whats_new_status_newer_releases_available">Rilis yang lebih baru tersedia.</string>
     <string name="whats_new_status_update_available">1 rilis yang lebih baru tersedia.</string>
-    <string name="whats_new_status_updates_available">%1$d rilis yang lebih baru tersedia.</string>
     <string name="whats_new_status_current_ahead">Build ini lebih baru dari rilis %1$s terbaru yang ditampilkan.</string>
     <string name="whats_new_status_current_ahead_all">Build ini lebih baru dari rilis terbaru yang ditampilkan.</string>
     <string name="whats_new_status_unknown">Status rilis tidak tersedia.</string>

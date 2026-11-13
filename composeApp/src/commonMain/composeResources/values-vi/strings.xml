@@ -536,8 +536,6 @@
     <string name="compose_settings_root_advanced_description">Cài đặt khi khởi động và quản lý hồ sơ.</string>
     <string name="compose_settings_root_advanced_section">NÂNG CAO</string>
     <string name="compose_settings_root_appearance_description">Trang chủ, luồng, bộ sưu tập và trang chi tiết</string>
-    <string name="compose_settings_root_check_updates_description">Tải xuống phiên bản mới nhất</string>
-    <string name="compose_settings_root_check_updates_title">Kiểm tra cập nhật</string>
     <string name="compose_settings_root_content_discovery_description">Quản lý các tiện ích và nguồn khám phá.</string>
     <string name="compose_settings_root_content_discovery_description_appstore">Quản lý các tiện ích và chọn những gì xuất hiện trong Nuvio.</string>
     <string name="compose_settings_root_downloads_description">Quản lý các phim điện ảnh và tập phim đã tải xuống của bạn.</string>

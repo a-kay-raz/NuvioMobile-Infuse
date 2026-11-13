@@ -536,8 +536,6 @@
     <string name="compose_settings_root_advanced_description">Comportement au démarrage et des profils.</string>
     <string name="compose_settings_root_advanced_section">AVANCÉ</string>
     <string name="compose_settings_root_appearance_description">Accueil, flux, collections et pages de détail</string>
-    <string name="compose_settings_root_check_updates_description">Télécharger la dernière version</string>
-    <string name="compose_settings_root_check_updates_title">Rechercher des mises à jour</string>
     <string name="compose_settings_root_content_discovery_description">Gérez les addons et sources de découverte.</string>
     <string name="compose_settings_root_content_discovery_description_appstore">Gérez vos addons et choisissez ce qui apparaît dans Nuvio.</string>
     <string name="compose_settings_root_downloads_description">Gérez vos films et épisodes téléchargés.</string>

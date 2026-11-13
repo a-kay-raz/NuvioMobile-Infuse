@@ -9,8 +9,6 @@ internal expect object PlayerSettingsStorage {
     fun savePlaybackBrightness(level: Float)
     fun loadUseLegacyPlayerLayout(): Boolean?
     fun saveUseLegacyPlayerLayout(enabled: Boolean)
-    fun loadToolbarLayout(): String?
-    fun saveToolbarLayout(layout: String)
     fun loadShowPlayerTitleLogo(): Boolean?
     fun saveShowPlayerTitleLogo(enabled: Boolean)
     fun loadShowLoadingOverlay(): Boolean?
@@ -35,6 +33,8 @@ internal expect object PlayerSettingsStorage {
     fun saveSkipIntroOffsetSeconds(seconds: Int)
     fun loadSkipForwardSeconds(): Int?
     fun saveSkipForwardSeconds(seconds: Int)
+    fun loadToolbarLayout(): String?
+    fun saveToolbarLayout(layout: String)
     fun loadLegacyBottomButtons(): String?
     fun saveLegacyBottomButtons(layout: String)
     fun loadLegacyTopButtons(): String?

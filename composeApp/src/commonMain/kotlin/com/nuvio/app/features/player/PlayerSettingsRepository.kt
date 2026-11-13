@@ -35,7 +35,6 @@ fun snapToAllowedTimeout(value: Int): Int {
 
 data class PlayerSettingsUiState(
     val useLegacyPlayerLayout: Boolean = false,
-    val toolbarLayout: PlayerToolbarLayout = PlayerToolbarLayout.Default,
     val showPlayerTitleLogo: Boolean = false,
     val showLoadingOverlay: Boolean = true,
     val showPlayerLoadingStatus: Boolean = true,
@@ -46,6 +45,7 @@ data class PlayerSettingsUiState(
     val holdToSpeedValue: Float = 2f,
     val skipBackwardSeconds: Int = PLAYER_SKIP_SECONDS_DEFAULT,
     val skipForwardSeconds: Int = PLAYER_SKIP_SECONDS_DEFAULT,
+    val toolbarLayout: PlayerToolbarLayout = PlayerToolbarLayout.Default,
     val legacyBottomButtons: LegacyBottomButtonLayout = LegacyPlayerButtonLayouts.DefaultBottom,
     val legacyTopButtons: LegacyTopButtonLayout = LegacyPlayerButtonLayouts.DefaultTop,
     val touchGesturesEnabled: Boolean = true,
@@ -152,7 +152,6 @@ object PlayerSettingsRepository {
 
     private var hasLoaded = false
     private var useLegacyPlayerLayout = false
-    private var toolbarLayout = PlayerToolbarLayout.Default
     private var showPlayerTitleLogo = false
     private var showLoadingOverlay = true
     private var showPlayerLoadingStatus = true
@@ -163,6 +162,7 @@ object PlayerSettingsRepository {
     private var holdToSpeedValue = 2f
     private var skipBackwardSeconds = PLAYER_SKIP_SECONDS_DEFAULT
     private var skipForwardSeconds = PLAYER_SKIP_SECONDS_DEFAULT
+    private var toolbarLayout = PlayerToolbarLayout.Default
     private var legacyBottomButtons = LegacyPlayerButtonLayouts.DefaultBottom
     private var legacyTopButtons = LegacyPlayerButtonLayouts.DefaultTop
     private var touchGesturesEnabled = true
@@ -273,7 +273,6 @@ object PlayerSettingsRepository {
     fun clearLocalState() {
         hasLoaded = false
         useLegacyPlayerLayout = false
-        toolbarLayout = PlayerToolbarLayout.Default
         showPlayerTitleLogo = false
         showLoadingOverlay = true
         showPlayerLoadingStatus = true
@@ -284,6 +283,7 @@ object PlayerSettingsRepository {
         holdToSpeedValue = 2f
         skipBackwardSeconds = PLAYER_SKIP_SECONDS_DEFAULT
         skipForwardSeconds = PLAYER_SKIP_SECONDS_DEFAULT
+        toolbarLayout = PlayerToolbarLayout.Default
         legacyBottomButtons = LegacyPlayerButtonLayouts.DefaultBottom
         legacyTopButtons = LegacyPlayerButtonLayouts.DefaultTop
         touchGesturesEnabled = true
@@ -387,7 +387,6 @@ object PlayerSettingsRepository {
     private fun loadFromDisk() {
         hasLoaded = true
         useLegacyPlayerLayout = PlayerSettingsStorage.loadUseLegacyPlayerLayout() ?: false
-        toolbarLayout = PlayerToolbarLayout.decode(PlayerSettingsStorage.loadToolbarLayout())
         showPlayerTitleLogo = PlayerSettingsStorage.loadShowPlayerTitleLogo() ?: false
         showLoadingOverlay = PlayerSettingsStorage.loadShowLoadingOverlay() ?: true
         showPlayerLoadingStatus = PlayerSettingsStorage.loadShowPlayerLoadingStatus() ?: true
@@ -400,6 +399,7 @@ object PlayerSettingsRepository {
         holdToSpeedValue = PlayerSettingsStorage.loadHoldToSpeedValue() ?: 2f
         skipBackwardSeconds = normalizePlayerSkipSeconds(PlayerSettingsStorage.loadSkipBackwardSeconds())
         skipForwardSeconds = normalizePlayerSkipSeconds(PlayerSettingsStorage.loadSkipForwardSeconds())
+        toolbarLayout = PlayerToolbarLayout.decode(PlayerSettingsStorage.loadToolbarLayout())
         legacyBottomButtons = LegacyPlayerButtonLayouts.decodeBottom(PlayerSettingsStorage.loadLegacyBottomButtons())
         legacyTopButtons = LegacyPlayerButtonLayouts.decodeTop(PlayerSettingsStorage.loadLegacyTopButtons())
         touchGesturesEnabled = PlayerSettingsStorage.loadTouchGesturesEnabled() ?: true
@@ -579,14 +579,6 @@ object PlayerSettingsRepository {
         publish()
     }
 
-    fun setToolbarLayout(layout: PlayerToolbarLayout) {
-        ensureLoaded()
-        if (toolbarLayout == layout) return
-        toolbarLayout = layout
-        publish()
-        PlayerSettingsStorage.saveToolbarLayout(layout.encode())
-    }
-
     fun setUseLegacyPlayerLayout(enabled: Boolean) {
         ensureLoaded()
         if (useLegacyPlayerLayout == enabled) return
@@ -676,6 +668,14 @@ object PlayerSettingsRepository {
         skipForwardSeconds = normalized
         publish()
         PlayerSettingsStorage.saveSkipForwardSeconds(normalized)
+    }
+
+    fun setToolbarLayout(layout: PlayerToolbarLayout) {
+        ensureLoaded()
+        if (toolbarLayout == layout) return
+        toolbarLayout = layout
+        publish()
+        PlayerSettingsStorage.saveToolbarLayout(layout.encode())
     }
 
     fun setLegacyBottomButtons(layout: LegacyBottomButtonLayout) {
@@ -1526,7 +1526,6 @@ object PlayerSettingsRepository {
     private fun publish() {
         _uiState.value = PlayerSettingsUiState(
             useLegacyPlayerLayout = useLegacyPlayerLayout,
-            toolbarLayout = toolbarLayout,
             showPlayerTitleLogo = showPlayerTitleLogo,
             showLoadingOverlay = showLoadingOverlay,
             showPlayerLoadingStatus = showPlayerLoadingStatus,
@@ -1537,6 +1536,7 @@ object PlayerSettingsRepository {
             holdToSpeedValue = holdToSpeedValue,
             skipBackwardSeconds = skipBackwardSeconds,
             skipForwardSeconds = skipForwardSeconds,
+            toolbarLayout = toolbarLayout,
             legacyBottomButtons = legacyBottomButtons,
             legacyTopButtons = legacyTopButtons,
             touchGesturesEnabled = touchGesturesEnabled,

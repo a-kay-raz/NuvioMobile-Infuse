@@ -579,15 +579,6 @@ internal fun PlayerControlsShell(
                         onInfoClick = onInfoClick,
                         onRateClick = onRateClick,
                         userRating = userRating,
-                        onPartyClick = onPartyClick,
-                        partyActive = partyActive,
-                        onPictureInPictureClick = onPictureInPictureClick,
-                        onCastClick = onCastClick,
-                        isCasting = isCasting,
-                        onOrientationToggleClick = onOrientationToggleClick,
-                        isPortraitPlayback = isPortraitPlayback,
-                        randomNextEpisodeMode = randomNextEpisodeMode,
-                        onRandomNextEpisodeModeToggle = onRandomNextEpisodeModeToggle,
                         onInteraction = onInteraction,
                     )
                 }

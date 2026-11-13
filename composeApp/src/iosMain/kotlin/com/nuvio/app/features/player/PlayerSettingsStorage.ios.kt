@@ -21,7 +21,6 @@ actual object PlayerSettingsStorage {
     private const val pendingExternalPlaybackKey = "pending_external_playback"
     private const val playbackBrightnessKey = "playback_brightness"
     private const val useLegacyPlayerLayoutKey = "use_legacy_player_layout"
-    private const val toolbarLayoutKey = "toolbar_layout"
     private const val showPlayerTitleLogoKey = "show_player_title_logo"
     private const val showLoadingOverlayKey = "show_loading_overlay"
     private const val showPlayerLoadingStatusKey = "show_player_loading_status"
@@ -32,6 +31,7 @@ actual object PlayerSettingsStorage {
     private const val holdToSpeedValueKey = "hold_to_speed_value"
     private const val skipBackwardSecondsKey = "skip_backward_seconds"
     private const val skipIntroOffsetSecondsKey = "skip_intro_offset_seconds"
+    private const val toolbarLayoutKey = "player_toolbar_layout"
     private const val legacyBottomButtonsKey = "legacy_player_bottom_buttons"
     private const val legacyTopButtonsKey = "legacy_player_top_buttons"
     private const val skipForwardSecondsKey = "skip_forward_seconds"
@@ -291,16 +291,6 @@ actual object PlayerSettingsStorage {
         NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = ProfileScopedKey.of(pauseOverlayEnabledKey))
     }
 
-    actual fun loadToolbarLayout(): String? {
-        val defaults = NSUserDefaults.standardUserDefaults
-        val key = ProfileScopedKey.of(toolbarLayoutKey)
-        return defaults.stringForKey(key)
-    }
-
-    actual fun saveToolbarLayout(layout: String) {
-        NSUserDefaults.standardUserDefaults.setObject(layout, forKey = ProfileScopedKey.of(toolbarLayoutKey))
-    }
-
     actual fun loadUseLegacyPlayerLayout(): Boolean? {
         val defaults = NSUserDefaults.standardUserDefaults
         val key = ProfileScopedKey.of(useLegacyPlayerLayoutKey)
@@ -375,6 +365,13 @@ actual object PlayerSettingsStorage {
 
     actual fun saveHoldToSpeedValue(speed: Float) {
         NSUserDefaults.standardUserDefaults.setFloat(speed, forKey = ProfileScopedKey.of(holdToSpeedValueKey))
+    }
+
+    actual fun loadToolbarLayout(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(toolbarLayoutKey))
+
+    actual fun saveToolbarLayout(layout: String) {
+        NSUserDefaults.standardUserDefaults.setObject(layout, forKey = ProfileScopedKey.of(toolbarLayoutKey))
     }
 
     actual fun loadLegacyBottomButtons(): String? =

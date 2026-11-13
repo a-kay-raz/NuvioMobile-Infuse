@@ -23,7 +23,6 @@ actual object PlayerSettingsStorage {
     private const val pendingExternalPlaybackKey = "pending_external_playback"
     private const val playbackBrightnessKey = "playback_brightness"
     private const val useLegacyPlayerLayoutKey = "use_legacy_player_layout"
-    private const val toolbarLayoutKey = "toolbar_layout"
     private const val showPlayerTitleLogoKey = "show_player_title_logo"
     private const val showLoadingOverlayKey = "show_loading_overlay"
     private const val showPlayerLoadingStatusKey = "show_player_loading_status"
@@ -34,6 +33,7 @@ actual object PlayerSettingsStorage {
     private const val holdToSpeedValueKey = "hold_to_speed_value"
     private const val skipBackwardSecondsKey = "skip_backward_seconds"
     private const val skipIntroOffsetSecondsKey = "skip_intro_offset_seconds"
+    private const val toolbarLayoutKey = "player_toolbar_layout"
     private const val legacyBottomButtonsKey = "legacy_player_bottom_buttons"
     private const val legacyTopButtonsKey = "legacy_player_top_buttons"
     private const val skipForwardSecondsKey = "skip_forward_seconds"
@@ -302,16 +302,6 @@ actual object PlayerSettingsStorage {
             ?.apply()
     }
 
-    actual fun loadToolbarLayout(): String? =
-        preferences?.getString(ProfileScopedKey.of(toolbarLayoutKey), null)
-
-    actual fun saveToolbarLayout(layout: String) {
-        preferences
-            ?.edit()
-            ?.putString(ProfileScopedKey.of(toolbarLayoutKey), layout)
-            ?.apply()
-    }
-
     actual fun loadUseLegacyPlayerLayout(): Boolean? =
         preferences?.let { sharedPreferences ->
             val key = ProfileScopedKey.of(useLegacyPlayerLayoutKey)
@@ -408,6 +398,13 @@ actual object PlayerSettingsStorage {
 
     private fun saveLocalInt(keyBase: String, value: Int) {
         preferences?.edit()?.putInt(ProfileScopedKey.of(keyBase), value)?.apply()
+    }
+
+    actual fun loadToolbarLayout(): String? =
+        preferences?.getString(ProfileScopedKey.of(toolbarLayoutKey), null)
+
+    actual fun saveToolbarLayout(layout: String) {
+        preferences?.edit()?.putString(ProfileScopedKey.of(toolbarLayoutKey), layout)?.apply()
     }
 
     actual fun loadLegacyBottomButtons(): String? =

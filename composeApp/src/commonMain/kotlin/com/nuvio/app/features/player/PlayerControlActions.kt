@@ -33,7 +33,6 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.NightsStay
-import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.StayCurrentLandscape
 import androidx.compose.material.icons.rounded.StayCurrentPortrait
 import androidx.compose.material.icons.rounded.SkipNext
@@ -48,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,7 +70,6 @@ import com.nuvio.app.core.ui.nuvioTypeScale
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 internal fun playerOrientationToggleIcon(isPortraitPlayback: Boolean): ImageVector =
     if (isPortraitPlayback) Icons.Rounded.StayCurrentLandscape else Icons.Rounded.StayCurrentPortrait
@@ -93,10 +92,9 @@ internal fun PlayerToolbar(
     onPictureInPictureClick: (() -> Unit)? = null,
     onDiscTitlesClick: (() -> Unit)? = null,
 ) {
-    // Top actions moved to the bottom actions pill, except lock, which is
-    // reverted to its original top position, in its glass capsule, before back.
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Spacer(Modifier.weight(1f))
+        // Toolbar actions share one liquid-glass capsule; close sits in its own glass circle.
         Row(
             modifier = Modifier.playerLiquidGlass(
                 shape = PlayerGlassCapsule,
@@ -163,8 +161,6 @@ internal fun PlayerToolbar(
     }
 }
 
-private const val ShowUpstreamStreamInfoAction = false
-
 @Composable
 internal fun PlayerControlActions(
     playbackSnapshot: PlayerPlaybackSnapshot,
@@ -196,61 +192,16 @@ internal fun PlayerControlActions(
     onInfoClick: (() -> Unit)? = null,
     onRateClick: (() -> Unit)? = null,
     userRating: Int? = null,
-    onPartyClick: (() -> Unit)? = null,
-    partyActive: Boolean = false,
-    onPictureInPictureClick: (() -> Unit)? = null,
-    onCastClick: (() -> Unit)? = null,
-    isCasting: Boolean = false,
-    onOrientationToggleClick: (() -> Unit)? = null,
-    isPortraitPlayback: Boolean = false,
-    randomNextEpisodeMode: Boolean = false,
-    onRandomNextEpisodeModeToggle: (() -> Unit)? = null,
     onInteraction: () -> Unit,
 ) {
-
-    val playerSettings by remember {
-        PlayerSettingsRepository.ensureLoaded()
-        PlayerSettingsRepository.uiState
-    }.collectAsStateWithLifecycle()
-
-    // Keyed by toolbar button so the user's "Player buttons" layout (Settings
-    // -> Playback -> Player, default player only) decides the bar order, which
-    // buttons stay on the bar, and which sit behind the arrow.
-    val availableActions = listOfNotNull(
-        onPartyClick?.let {
-            PlayerToolbarButton.WATCH_PARTY to PlayerControlAction(
-                stringResource(Res.string.party_title), it,
-                icon = Icons.Rounded.Groups,
-                tint = if (partyActive) MaterialTheme.colorScheme.primary else Color.White,
-            )
-        },
-        onPictureInPictureClick?.let {
-            PlayerToolbarButton.PICTURE_IN_PICTURE to PlayerControlAction(
-                stringResource(Res.string.compose_player_picture_in_picture), it,
-                icon = Icons.Rounded.PictureInPictureAlt,
-            )
-        },
-        onQualityClick?.let {
-            PlayerToolbarButton.QUALITY to PlayerControlAction(
-                qualityLabel?.takeIf { label -> label.isNotBlank() } ?: "Quality", it,
-                icon = Icons.Rounded.HighQuality,
-            )
-        },
-        PlayerToolbarButton.SUBTITLES to PlayerControlAction(
-            stringResource(Res.string.compose_player_subtitles), onSubtitleClick,
-            painter = appIconPainter(AppIconResource.PlayerSubtitles),
-        ),
-        PlayerToolbarButton.AUDIO to PlayerControlAction(
-            stringResource(Res.string.compose_player_audio), onAudioClick,
-            painter = appIconPainter(AppIconResource.PlayerAudioFilled),
-        ),
+    val availableActions = buildMap<PlayerToolbarButton, PlayerControlAction> {
         onNextEpisodeClick?.let {
-            PlayerToolbarButton.NEXT_EPISODE to PlayerControlAction(
+            this[PlayerToolbarButton.NEXT_EPISODE] = PlayerControlAction(
                 stringResource(Res.string.player_next_episode), it,
                 icon = Icons.Rounded.SkipNext, iconSize = 40.dp,
             )
-        },
-        PlayerToolbarButton.SPEED to PlayerControlAction(
+        }
+        this[PlayerToolbarButton.SPEED] = PlayerControlAction(
             "${stringResource(Res.string.compose_player_speed)} ${formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed)}",
             onSpeedClick, icon = Icons.Rounded.Speed,
             popup = {
@@ -261,19 +212,27 @@ internal fun PlayerControlActions(
                     onDismiss = onSpeedPickerDismiss,
                 )
             },
-        ),
-        PlayerToolbarButton.RESIZE to PlayerControlAction(
+        )
+        this[PlayerToolbarButton.RESIZE] = PlayerControlAction(
             stringResource(resizeMode.labelRes), onResizeModeClick,
             painter = appIconPainter(AppIconResource.PlayerAspectRatio),
-        ),
+        )
+        this[PlayerToolbarButton.SUBTITLES] = PlayerControlAction(
+            stringResource(Res.string.compose_player_subtitles), onSubtitleClick,
+            painter = appIconPainter(AppIconResource.PlayerSubtitles),
+        )
         onChaptersClick?.let {
-            PlayerToolbarButton.CHAPTERS to PlayerControlAction(
+            this[PlayerToolbarButton.CHAPTERS] = PlayerControlAction(
                 stringResource(Res.string.player_chapters), it,
                 icon = Icons.AutoMirrored.Rounded.ListAlt,
             )
-        },
+        }
+        this[PlayerToolbarButton.AUDIO] = PlayerControlAction(
+            stringResource(Res.string.compose_player_audio), onAudioClick,
+            painter = appIconPainter(AppIconResource.PlayerAudioFilled),
+        )
         onNightModeClick?.let {
-            PlayerToolbarButton.NIGHT_MODE to PlayerControlAction(
+            this[PlayerToolbarButton.NIGHT_MODE] = PlayerControlAction(
                 "${stringResource(Res.string.player_night_mode)} ${
                     stringResource(if (nightModeEnabled) Res.string.player_night_mode_on else Res.string.player_night_mode_off)
                 }",
@@ -281,87 +240,71 @@ internal fun PlayerControlActions(
                 icon = Icons.Rounded.NightsStay,
                 tint = if (nightModeEnabled) MaterialTheme.colorScheme.primary else Color.White,
             )
-        },
-        onSwitchEngineClick?.let {
-            PlayerToolbarButton.SWITCH_ENGINE to PlayerControlAction(
-                stringResource(Res.string.cd_switch_player_engine), it,
-                icon = Icons.Rounded.SwapHoriz,
+        }
+        onQualityClick?.let {
+            this[PlayerToolbarButton.QUALITY] = PlayerControlAction(
+                qualityLabel?.takeIf { label -> label.isNotBlank() }
+                    ?: stringResource(Res.string.player_toolbar_button_quality),
+                it,
+                icon = Icons.Rounded.HighQuality,
             )
-        },
-        onRandomNextEpisodeModeToggle?.let {
-            PlayerToolbarButton.SHUFFLE to PlayerControlAction(
-                if (randomNextEpisodeMode) stringResource(Res.string.player_random_next_enabled)
-                else stringResource(Res.string.player_random_next_disabled), it,
-                icon = Icons.Rounded.Shuffle,
-                tint = if (randomNextEpisodeMode) MaterialTheme.colorScheme.primary else Color.White,
-            )
-        },
-        onOrientationToggleClick?.let {
-            PlayerToolbarButton.ORIENTATION to PlayerControlAction(
-                stringResource(playerOrientationToggleLabel(isPortraitPlayback)), it,
-                icon = playerOrientationToggleIcon(isPortraitPlayback),
-            )
-        },
-        onCastClick?.let {
-            PlayerToolbarButton.CAST to PlayerControlAction(
-                stringResource(Res.string.player_cast), it,
-                icon = if (isCasting) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
-            )
-        },
+        }
         onSourcesClick?.let {
-            PlayerToolbarButton.SOURCES to PlayerControlAction(
+            this[PlayerToolbarButton.SOURCES] = PlayerControlAction(
                 stringResource(Res.string.compose_player_sources), it,
                 painter = appIconPainter(AppIconResource.PlayerSource),
             )
-        },
+        }
         onEpisodesClick?.let {
-            PlayerToolbarButton.EPISODES to PlayerControlAction(
+            this[PlayerToolbarButton.EPISODES] = PlayerControlAction(
                 stringResource(Res.string.compose_player_episodes), it,
                 painter = appIconPainter(AppIconResource.PlayerEpisodes),
             )
-        },
+        }
         onRateClick?.let {
-            PlayerToolbarButton.RATE to PlayerControlAction(
+            this[PlayerToolbarButton.RATE] = PlayerControlAction(
                 userRating?.let { rating -> stringResource(Res.string.user_rating_action_rated, rating) }
                     ?: stringResource(Res.string.user_rating_action_rate),
                 it,
                 icon = if (userRating != null) Icons.Rounded.Star else Icons.Rounded.StarBorder,
             )
-        },
+        }
         onOpenInExternalPlayer?.let {
-            PlayerToolbarButton.EXTERNAL_PLAYER to PlayerControlAction(
+            this[PlayerToolbarButton.EXTERNAL_PLAYER] = PlayerControlAction(
                 stringResource(Res.string.streams_open_external_player), it,
                 icon = Icons.AutoMirrored.Rounded.OpenInNew,
             )
-        },
+        }
         onInfoClick?.let {
-            PlayerToolbarButton.PLAYBACK_INFO to PlayerControlAction(
+            this[PlayerToolbarButton.PLAYBACK_INFO] = PlayerControlAction(
                 stringResource(Res.string.compose_player_playback_info), it,
                 icon = Icons.Rounded.Info,
             )
-        },
+        }
+        onSwitchEngineClick?.let {
+            this[PlayerToolbarButton.SWITCH_ENGINE] = PlayerControlAction(
+                stringResource(Res.string.cd_switch_player_engine), it,
+                icon = Icons.Rounded.SwapHoriz,
+            )
+        }
         onVideoSettingsClick?.let {
-            PlayerToolbarButton.VIDEO_SETTINGS to PlayerControlAction(
+            this[PlayerToolbarButton.VIDEO_SETTINGS] = PlayerControlAction(
                 stringResource(Res.string.player_action_video_settings), it,
                 icon = Icons.Rounded.Build,
             )
-        },
+        }
         onSubmitIntroClick?.let {
-            PlayerToolbarButton.SUBMIT_INTRO to PlayerControlAction(
+            this[PlayerToolbarButton.SUBMIT_INTRO] = PlayerControlAction(
                 stringResource(Res.string.submit_intro_action), it,
                 icon = Icons.Rounded.Flag,
             )
-        },
-    ).toMap()
+        }
+    }
+    val playerSettings by PlayerSettingsRepository.uiState.collectAsState()
     val toolbarLayout = playerSettings.toolbarLayout
-    val primaryActions = toolbarLayout.visibleButtons.mapNotNull { availableActions[it] }
-    val secondaryActions = toolbarLayout.hiddenButtons.mapNotNull { availableActions[it] }
-    // The old first-4 cap is gone: the layout itself decides what stays on
-    // the bar (primary) and what sits behind the arrow (secondary). The bar
-    // scrolls horizontally, so a long primary list still fits.
-    val visibleActions = primaryActions
-    val hiddenActions = secondaryActions
-    val hasOverflow = hiddenActions.isNotEmpty()
+    val primaryActions = toolbarLayout.visibleButtons.mapNotNull(availableActions::get)
+    val secondaryActions = toolbarLayout.hiddenButtons.mapNotNull(availableActions::get)
+    val hasOverflow = secondaryActions.isNotEmpty()
     var expanded by remember(hasOverflow) { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     LaunchedEffect(expanded, scrollState.maxValue) {
@@ -384,7 +327,7 @@ internal fun PlayerControlActions(
                         .horizontalScroll(scrollState),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    (if (expanded) primaryActions + secondaryActions else visibleActions).forEach { action ->
+                    (if (expanded) primaryActions + secondaryActions else primaryActions).forEach { action ->
                         Box {
                             PlayerAction(
                                 description = action.description,
@@ -467,9 +410,8 @@ private fun PlayerAction(
 
 internal val PlayerGlassCapsule = RoundedCornerShape(percent = 50)
 
-
-// Restored from Luqman: the flat action list used by the fold layout (FoldControls).
-// The regular toolbar above builds its actions from the customizable toolbar layout.
+// Upstream's flat action list, used by the fold layout (FoldControls). The regular toolbar
+// builds its actions from the fork's customizable toolbar layout above.
 @Composable
 internal fun playerControlActions(
     playbackSnapshot: PlayerPlaybackSnapshot,

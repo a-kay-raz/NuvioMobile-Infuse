@@ -39,25 +39,20 @@ import org.jetbrains.compose.resources.stringResource
 
 internal val PlayerToolbarButton.labelRes: StringResource
     get() = when (this) {
-        PlayerToolbarButton.WATCH_PARTY -> Res.string.party_title
-        PlayerToolbarButton.PICTURE_IN_PICTURE -> Res.string.compose_player_picture_in_picture
-        PlayerToolbarButton.QUALITY -> Res.string.player_toolbar_button_quality
-        PlayerToolbarButton.SUBTITLES -> Res.string.compose_player_subtitles
-        PlayerToolbarButton.AUDIO -> Res.string.compose_player_audio
         PlayerToolbarButton.NEXT_EPISODE -> Res.string.player_next_episode
         PlayerToolbarButton.SPEED -> Res.string.compose_player_speed
         PlayerToolbarButton.RESIZE -> Res.string.player_toolbar_button_resize
+        PlayerToolbarButton.SUBTITLES -> Res.string.compose_player_subtitles
         PlayerToolbarButton.CHAPTERS -> Res.string.player_chapters
-        PlayerToolbarButton.SWITCH_ENGINE -> Res.string.cd_switch_player_engine
-        PlayerToolbarButton.SHUFFLE -> Res.string.player_toolbar_button_shuffle
-        PlayerToolbarButton.ORIENTATION -> Res.string.player_toolbar_button_orientation
-        PlayerToolbarButton.CAST -> Res.string.player_cast
+        PlayerToolbarButton.AUDIO -> Res.string.compose_player_audio
         PlayerToolbarButton.NIGHT_MODE -> Res.string.player_night_mode
+        PlayerToolbarButton.QUALITY -> Res.string.player_toolbar_button_quality
         PlayerToolbarButton.SOURCES -> Res.string.compose_player_sources
         PlayerToolbarButton.EPISODES -> Res.string.compose_player_episodes
         PlayerToolbarButton.RATE -> Res.string.user_rating_action_rate
         PlayerToolbarButton.EXTERNAL_PLAYER -> Res.string.streams_open_external_player
         PlayerToolbarButton.PLAYBACK_INFO -> Res.string.compose_player_playback_info
+        PlayerToolbarButton.SWITCH_ENGINE -> Res.string.cd_switch_player_engine
         PlayerToolbarButton.VIDEO_SETTINGS -> Res.string.player_action_video_settings
         PlayerToolbarButton.SUBMIT_INTRO -> Res.string.submit_intro_action
     }

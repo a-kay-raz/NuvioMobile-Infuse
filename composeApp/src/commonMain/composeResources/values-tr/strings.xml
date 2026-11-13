@@ -2391,13 +2391,6 @@ Bu özelliği tamamen kendi sorumluluğunuzda kullanırsınız. P2P istediğiniz
     <string name="library_error_sort_failed">Sıralama düzeni yüklenemedi. Sağlayıcı sırası gösteriliyor.</string>
     <string name="cloud_library_no_matches_message">Mevcut filtrelerle eşleşen oynatılabilir bulut dosyası yok.</string>
     <string name="cloud_library_no_matches_title">Eşleşen dosya yok</string>
-    <string name="updates_channel_title">Güncelleme kanalı</string>
-    <string name="updates_channel_description">Alınacak uygulama güncellemelerinin türünü seçin</string>
-    <string name="updates_channel_stable">Kararlı</string>
-    <string name="updates_channel_beta">Beta</string>
-    <string name="updates_channel_stable_description">Günlük kullanım için tasarlanmıştır.</string>
-    <string name="updates_channel_beta_description">Hatalar içerebilecek, özellikleri bozabilecek veya beklenmedik şekilde davranabilecek erken güncellemeler.</string>
-    <string name="updates_waiting_for_stable">Kullanılabilir olduğunda bir sonraki kararlı sürümü alacaksınız</string>
     <string name="settings_playback_auto_skip_segments">Otomatik Atlama</string>
     <string name="settings_playback_auto_skip_none">Kapalı</string>
     <string name="settings_playback_auto_skip_intro">Giriş / Açılış</string>

@@ -2391,13 +2391,6 @@
     <string name="library_status_completed">Ukończone</string>
     <string name="library_status_dropped">Porzucone</string>
     <string name="library_error_sort_failed">Nie udało się wczytać kolejności sortowania. Pokazano kolejność dostawcy.</string>
-    <string name="updates_channel_title">Kanał aktualizacji</string>
-    <string name="updates_channel_description">Wybierz typ aktualizacji aplikacji, które chcesz otrzymywać</string>
-    <string name="updates_channel_stable">Stabilny</string>
-    <string name="updates_channel_beta">Beta</string>
-    <string name="updates_channel_stable_description">Przeznaczony do codziennego użytku.</string>
-    <string name="updates_channel_beta_description">Wczesne aktualizacje, które mogą zawierać błędy, psuć funkcje lub działać nieoczekiwanie.</string>
-    <string name="updates_waiting_for_stable">Otrzymasz następne wydanie stabilne, gdy będzie dostępne</string>
     <string name="settings_playback_auto_skip_segments">Automatyczne pomijanie</string>
     <string name="settings_playback_auto_skip_none">Brak</string>
     <string name="settings_playback_auto_skip_intro">Intro / Czołówka</string>

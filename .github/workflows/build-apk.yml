@@ -73,3 +73,19 @@ jobs:
           name: nuvio-apk
           path: build-apks/*.apk
           retention-days: 7
+
+      - name: Pack dev build zip
+        run: |
+          mkdir -p dist
+          zip -9 -j "dist/Infuse-dev-${{ github.run_number }}.zip" build-apks/*.apk
+          ls -lh dist
+
+      - name: Publish dev build draft (owner only)
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          tag_name: dev-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Dev build ${{ github.run_number }}
+          body: Dev build (owner only).
+          files: dist/*.zip

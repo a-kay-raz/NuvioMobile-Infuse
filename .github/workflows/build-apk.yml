@@ -66,14 +66,6 @@ jobs:
           find androidApp/build/outputs/apk/ -name "*.apk" -exec cp {} build-apks/ \;
           ls -la build-apks/
 
-      - name: Upload APK artifact (no release)
-        uses: actions/upload-artifact@v6
-        if: success()
-        with:
-          name: nuvio-apk
-          path: build-apks/*.apk
-          retention-days: 7
-
       - name: Pack dev build zip
         run: |
           mkdir -p dist

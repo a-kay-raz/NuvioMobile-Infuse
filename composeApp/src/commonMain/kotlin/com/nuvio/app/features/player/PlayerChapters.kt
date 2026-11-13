@@ -18,6 +18,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +37,13 @@ import nuvio.composeapp.generated.resources.compose_player_playing
 import nuvio.composeapp.generated.resources.player_chapter_number
 import nuvio.composeapp.generated.resources.player_chapters
 import org.jetbrains.compose.resources.stringResource
+
+/** A chapter of the playing file, as its container lists it. */
+@Immutable
+data class PlayerChapter(
+    val startMs: Long,
+    val title: String?,
+)
 
 internal object PlayerChapters {
     const val PREVIOUS_RESTART_THRESHOLD_MS = 3_000L
@@ -66,24 +76,25 @@ internal fun List<PlayerChapter>.currentChapterIndex(positionMs: Long): Int {
     return index
 }
 
+// --- Fork additions -------------------------------------------------------------------------
+// Upstream reads chapters through PlayerEngineController.getChapters() (libmpv on Android,
+// MKV-only ExoPlayer). The fork also fills PlayerPlaybackSnapshot.chapters from iOS mpv and the
+// fork ExoPlayer reader (MKV + MP4); the runtime falls back to those (see
+// PlayerScreenRuntimeChapters.kt). The fork also shows the current chapter above the timeline.
+
 private const val MaxMpvChapters = 500
 
 internal fun mpvChapters(property: (String) -> String?): List<PlayerChapter> {
     val count = property("chapter-list/count")?.trim()?.toIntOrNull() ?: return emptyList()
-    if (count < 2) return emptyList()
-    return (0 until count.coerceAtMost(MaxMpvChapters))
+    return (0 until count.coerceIn(0, MaxMpvChapters))
         .mapNotNull { index ->
             val seconds = property("chapter-list/$index/time")?.trim()?.toDoubleOrNull()
                 ?: return@mapNotNull null
             PlayerChapter(
-                title = property("chapter-list/$index/title")?.trim().orEmpty(),
                 startMs = (seconds * 1000.0).toLong().coerceAtLeast(0L),
+                title = property("chapter-list/$index/title")?.trim()?.takeIf { it.isNotBlank() },
             )
         }
-        .sortedBy { it.startMs }
-        .distinctBy { it.startMs }
-        .takeIf { it.size >= 2 }
-        .orEmpty()
 }
 
 internal fun List<PlayerChapter>.chapterMarkFractions(durationMs: Long): List<Float> {
@@ -103,10 +114,12 @@ internal fun PlayerChapterLabel(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
-    val index = chapters.currentChapterIndex(positionMs)
+    val settings by PlayerSettingsRepository.uiState.collectAsState()
+    if (!settings.chapterTitleEnabled) return
+    val index = PlayerChapters.indexAt(chapters, positionMs)
     if (index < 0) return
-    val fallbackTitle = stringResource(Res.string.player_chapter_number, index + 1)
-    val title = chapters[index].title.ifBlank { fallbackTitle }
+    val title = chapters[index].title?.takeIf { it.isNotBlank() }
+        ?: stringResource(Res.string.player_chapter_number, index + 1)
     Text(
         text = title,
         style = MaterialTheme.nuvioTypeScale.labelSm.copy(
@@ -168,9 +181,8 @@ internal fun PlayerChaptersPanel(
                     key = { index, chapter -> "${index}_${chapter.startMs}" },
                 ) { index, chapter ->
                     PlayerChapterRow(
-                        title = chapter.title.ifBlank {
-                            stringResource(Res.string.player_chapter_number, index + 1)
-                        },
+                        title = chapter.title?.takeIf { it.isNotBlank() }
+                            ?: stringResource(Res.string.player_chapter_number, index + 1),
                         startMs = chapter.startMs,
                         isCurrent = index == currentIndex,
                         onClick = { onChapterSelected(chapter) },

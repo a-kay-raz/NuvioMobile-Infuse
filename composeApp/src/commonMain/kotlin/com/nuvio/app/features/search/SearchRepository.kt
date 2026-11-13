@@ -20,6 +20,9 @@ import com.nuvio.app.features.catalog.fetchCatalogPage
 import com.nuvio.app.features.catalog.mergeCatalogItems
 import com.nuvio.app.features.catalog.nextCatalogPaginationState
 import com.nuvio.app.features.catalog.supportsPagination
+import com.nuvio.app.features.cloudstream.CloudStreamPluginItem
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
+import com.nuvio.app.features.cloudstream.toMetaPreview
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.HomeCatalogSection
 import com.nuvio.app.features.home.MetaPreview
@@ -91,7 +94,9 @@ object SearchRepository {
         val addonManifestErrorMessage = enabledAddons.firstEnabledManifestError()
         val activeAddons = enabledAddons.filter { it.manifest != null }
         val serverSearches = ServerCatalog.searchTargets()
-        if (activeAddons.isEmpty() && serverSearches.isEmpty()) {
+        CloudStreamRepository.initialize()
+        val runnableCloudPlugins = CloudStreamRepository.uiState.value.plugins.filter { it.isRunnable }
+        if (activeAddons.isEmpty() && serverSearches.isEmpty() && runnableCloudPlugins.isEmpty()) {
             activeJob?.cancel()
             lastRequestKey = null
             _uiState.value = SearchUiState(
@@ -110,7 +115,7 @@ object SearchRepository {
             addons = activeAddons,
             query = normalizedQuery,
         )
-        if (requests.isEmpty() && serverSearches.isEmpty()) {
+        if (requests.isEmpty() && serverSearches.isEmpty() && runnableCloudPlugins.isEmpty()) {
             activeJob?.cancel()
             lastRequestKey = null
             _uiState.value = SearchUiState(
@@ -136,6 +141,10 @@ object SearchRepository {
                 append("|server:${ref.connection.id}:${ref.kind.contentType}:")
                 append(ref.connection.selectedLibraries(ref.kind).joinToString(",") { it.id })
             }
+            append("|cloudstream:")
+            append(CloudStreamRepository.uiState.value.registryRevision)
+            append(':')
+            append(runnableCloudPlugins.joinToString(separator = ",") { it.metadata.id.value })
         }
         val loaders: List<suspend () -> HomeCatalogSection> =
             requests.map { request -> suspend { request.toSection(forceRefresh = forceRefresh) } } +
@@ -147,6 +156,9 @@ object SearchRepository {
                             }
                         }
                     }
+                } +
+                runnableCloudPlugins.map { plugin ->
+                    suspend { cloudStreamSearchSection(plugin, normalizedQuery) }
                 }
         if (canReuseRequestState(forceRefresh, requestKey, lastRequestKey)) return
         lastRequestKey = requestKey
@@ -506,6 +518,42 @@ object SearchRepository {
             items = items,
             availableItemCount = page.rawItemCount,
             hasMore = supportsPagination && page.nextSkip != null,
+        )
+    }
+
+    private suspend fun cloudStreamSearchSection(
+        plugin: CloudStreamPluginItem,
+        query: String,
+    ): HomeCatalogSection {
+        val providerId = plugin.metadata.id.value
+        val items = CloudStreamRepository.search(query, providerId)
+            .firstOrNull()
+            ?.getOrThrow()
+            .orEmpty()
+            .map { it.toMetaPreview() }
+        val posterPattern = com.nuvio.app.core.poster.CustomPosterUrlRepository.let {
+            it.ensureLoaded()
+            it.patternForScreen(com.nuvio.app.core.poster.CustomPosterScreen.SEARCH)
+        }
+        val previews = items.withCustomPosterUrls(posterPattern)
+        require(previews.isNotEmpty()) {
+            getString(Res.string.search_error_no_results_for_catalog, plugin.metadata.name)
+        }
+        return HomeCatalogSection(
+            key = "cloudstream:search:$providerId:${query.lowercase()}",
+            title = "CS3 • ${plugin.metadata.name}",
+            subtitle = "${plugin.metadata.name} · CloudStream",
+            addonName = plugin.metadata.name,
+            target = CatalogTarget.CloudStream(
+                providerId = providerId,
+                categoryName = plugin.metadata.name,
+                searchQuery = query,
+                contentType = previews.first().type,
+                supportsPagination = false,
+            ),
+            items = previews,
+            availableItemCount = previews.size,
+            hasMore = false,
         )
     }
 

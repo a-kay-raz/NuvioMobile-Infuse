@@ -311,7 +311,7 @@ internal fun PlayerChapterTitle(
     val index = PlayerChapters.indexAt(chapters, positionMs)
     if (index < 0) return
     Text(
-        text = chapters[index].title.ifBlank { stringResource(Res.string.compose_player_chapter_number, index + 1) },
+        text = chapters[index].title ?: stringResource(Res.string.compose_player_chapter_number, index + 1),
         style = MaterialTheme.nuvioTypeScale.bodyMd,
         color = Color.White.copy(alpha = 0.9f),
         maxLines = 1,

@@ -62,11 +62,20 @@ object HomeRepository {
     private val _selectedCloudStreamProviderId = MutableStateFlow<String?>(null)
     val selectedCloudStreamProviderId: StateFlow<String?> = _selectedCloudStreamProviderId.asStateFlow()
 
+    // True once the stored provider selection has been read back from disk for
+    // the current profile. The Home defaulting effect must wait for this:
+    // on a fresh process the flow starts as null, and without the gate the
+    // effect mistakes that for "never selected" and overwrites the saved
+    // selection with the first provider (and persists it).
+    private val _cloudStreamSelectionRestored = MutableStateFlow(false)
+    val cloudStreamSelectionRestored: StateFlow<Boolean> = _cloudStreamSelectionRestored.asStateFlow()
+
     private fun restoreSelectedCloudStreamProvider() {
         val stored = HomeCatalogSettingsRepository.selectedCloudStreamProviderId()
         if (_selectedCloudStreamProviderId.value != stored) {
             _selectedCloudStreamProviderId.value = stored
         }
+        _cloudStreamSelectionRestored.value = true
     }
 
     fun setSelectedCloudStreamProvider(providerId: String?) {
@@ -273,6 +282,7 @@ object HomeRepository {
     fun clear() {
         activeJob?.cancel()
         _selectedCloudStreamProviderId.value = null
+        _cloudStreamSelectionRestored.value = false
         activeJob = null
         activeRequestKey = null
         currentRequestKey = null

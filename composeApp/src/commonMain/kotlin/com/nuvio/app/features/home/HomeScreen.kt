@@ -237,8 +237,13 @@ fun HomeScreen(
             .sortedBy { it.metadata.name.lowercase() }
     }
     val selectedCloudStreamProviderId by HomeRepository.selectedCloudStreamProviderId.collectAsStateWithLifecycle()
+    val cloudStreamSelectionRestored by HomeRepository.cloudStreamSelectionRestored.collectAsStateWithLifecycle()
 
-    LaunchedEffect(runnableCloudStreamProviders, selectedCloudStreamProviderId) {
+    LaunchedEffect(runnableCloudStreamProviders, selectedCloudStreamProviderId, cloudStreamSelectionRestored) {
+        // Don't default anything until the stored selection has been restored:
+        // on app open the flow starts as null, and defaulting here would
+        // overwrite (and persist) the saved provider with the first one.
+        if (!cloudStreamSelectionRestored) return@LaunchedEffect
         if (runnableCloudStreamProviders.isNotEmpty()) {
             if (selectedCloudStreamProviderId == null) {
                 HomeRepository.setSelectedCloudStreamProvider(runnableCloudStreamProviders.first().metadata.id.value)

@@ -563,7 +563,6 @@ object DownloadsRepository {
             advanceDownloadQueue()
         }
     }
-    }
 
     private fun startDownload(item: DownloadItem) {
         val request = DownloadPlatformRequest(item)

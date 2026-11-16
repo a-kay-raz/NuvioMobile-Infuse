@@ -53,6 +53,8 @@ internal actual object DownloadsStorage {
     fun loadExternalFolderUri(): String? = getDownloadLocationUri()
     fun saveExternalFolderUri(uri: String?) {
         setDownloadLocationUri(uri)
+    }
+
     actual fun clearUnfinishedDownloads() {
         val prefs = preferences ?: return
         (1..MAX_PROFILES).forEach { profileId ->

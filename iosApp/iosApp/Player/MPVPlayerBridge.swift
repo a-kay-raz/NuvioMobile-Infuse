@@ -1931,7 +1931,7 @@ final class MPVPlayerViewController: UIViewController {
         }
         let cueText = getString("sub-text") ?? ""
         pictureInPictureController?.setSubtitleText(cueText, bold: lastSubtitleStyle?.bold ?? false)
-        let text = styled ? cueText : ""
+        let text = styled ? (getString("sub-text/ass") ?? cueText) : ""
         if text != lastSubtitleText {
             lastSubtitleText = text
             subtitleTextHandler?.onTextChanged(text: text)

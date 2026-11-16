@@ -27,6 +27,16 @@
 
 ## 📥 Download & Install
 
+#### Beta builds
+
+Pre-release builds have their own source. Add it instead of the stable one if you want to try new features early:
+
+```
+https://github.com/luqmanfadlli/NuvioMobile-Enhanced/raw/refs/heads/enhanced/store-beta.json
+```
+
+Both sources install the same app, so use only one of them on a device. Beta IPAs are also attached to the [pre-releases](https://github.com/luqmanfadlli/NuvioMobile-Enhanced/releases).
+
 ### Android
 Download the latest pre-compiled APK directly from the releases page:
 - 📲 **[Download Latest Android APK](https://github.com/a-kay-raz/NuvioMobile-Infuse/releases/latest)** — `androidApp-full-arm64-v8a-release.apk` (arm64, v0.6.5)

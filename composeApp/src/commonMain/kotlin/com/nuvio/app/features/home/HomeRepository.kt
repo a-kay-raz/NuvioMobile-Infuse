@@ -283,10 +283,11 @@ object HomeRepository {
         }
     }
 
-    fun applyCurrentSettings() {
+    fun applyCurrentSettings(heroSourcesChanged: Boolean = false) {
         publishCurrentState(
             isLoading = _uiState.value.isLoading,
             requestKey = currentRequestKey,
+            keepVisibleHeroWhilePending = !heroSourcesChanged,
         )
         ensureCollectionHeroFallback(
             addons = AddonRepository.uiState.value.addons.enabledAddons(),
@@ -381,28 +382,22 @@ object HomeRepository {
         fun HomeCatalogSection.withPosterOverlay(): HomeCatalogSection =
             copy(items = items.reapplyCustomPosterUrls(posterPattern))
 
-        val entries = if (currentDefinitions.isNotEmpty()) {
-            currentDefinitions
-                .sortedBy { definition -> preferences[definition.key]?.order ?: Int.MAX_VALUE }
-                .mapNotNull { definition ->
-                    val preference = preferences[definition.key]
-                    if (preference?.enabled == false) return@mapNotNull null
+        val entries = currentDefinitions
+            .let { orderHomeCatalogDefinitions(it, snapshot) }
+            .mapNotNull { definition ->
+                val preference = preferences[definition.key]
+                if (preference?.enabled == false) return@mapNotNull null
 
-                    val section = cachedSections[definition.cacheKey]
-                        ?.withPosterOverlay()
-                        ?.withReleaseFilter()
-                        ?: return@mapNotNull null
-                    if (section.items.isEmpty()) return@mapNotNull null
-                    val customTitle = preference?.customTitle.orEmpty()
-                    definition.cacheKey to section.copy(
-                        title = customTitle.ifBlank { definition.titleFor(snapshot.showCatalogType) },
-                    )
-                }
-        } else {
-            cachedSections.map { (key, section) ->
-                key to section.withPosterOverlay().withReleaseFilter()
+                val section = cachedSections[definition.cacheKey]
+                    ?.withPosterOverlay()
+                    ?.withReleaseFilter()
+                    ?: return@mapNotNull null
+                if (section.items.isEmpty()) return@mapNotNull null
+                val customTitle = preference?.customTitle.orEmpty()
+                definition.cacheKey to section.copy(
+                    title = customTitle.ifBlank { definition.titleFor(snapshot.showCatalogType) },
+                )
             }
-        }
         if (entries.isNotEmpty() || currentDefinitions.isNotEmpty()) {
             lastPublishedEntries = entries
         }
@@ -418,19 +413,19 @@ object HomeRepository {
             return
         }
 
-        val catalogHeroItems = if (snapshot.heroEnabled) {
-            val heroRandom = Random((requestKey?.hashCode() ?: 0).absoluteValue + 1)
+        val heroSourceItems = if (snapshot.heroEnabled) {
             currentDefinitions
                 .filter { definition -> preferences[definition.key]?.heroSourceEnabled != false }
                 .mapNotNull { definition -> cachedSections[definition.cacheKey] }
                 .map { section -> section.withPosterOverlay().withReleaseFilter() }
                 .flatMap { section -> section.items }
                 .distinctBy { item -> "${item.type}:${item.id}" }
-                .shuffled(heroRandom)
-                .take(HOME_HERO_ITEM_LIMIT)
         } else {
             emptyList()
         }
+        val catalogHeroItems = heroSourceItems
+            .shuffled(Random((requestKey?.hashCode() ?: 0).absoluteValue + 1))
+            .take(HOME_HERO_ITEM_LIMIT)
 
         val cloudStreamHeroItems = if (snapshot.heroEnabled) {
             val heroRandom = Random((requestKey?.hashCode() ?: 0).absoluteValue + 2)
@@ -447,7 +442,12 @@ object HomeRepository {
             snapshot.heroEnabled && catalogHeroItems.isEmpty() && cloudStreamHeroItems.isEmpty()
         val visibleHeroItems = _uiState.value.heroItems
         val heroItems = if (snapshot.heroEnabled) {
-            if (visibleHeroItems.isNotEmpty() && isHeroResolutionPending(isLoading)) {
+            if (
+                keepVisibleHeroWhilePending &&
+                visibleHeroItems.isNotEmpty() &&
+                isHeroResolutionPending(isLoading) &&
+                (catalogHeroItems.isEmpty() || visibleHeroItems.allComeFrom(heroSourceItems))
+            ) {
                 visibleHeroItems
             } else {
                 catalogHeroItems
@@ -812,4 +812,9 @@ private fun prioritizeDefinitions(
         }
     }
     return priority + remainder
+}
+
+private fun List<MetaPreview>.allComeFrom(sourceItems: List<MetaPreview>): Boolean {
+    val sourceKeys = sourceItems.mapTo(HashSet()) { item -> "${item.type}:${item.id}" }
+    return all { item -> "${item.type}:${item.id}" in sourceKeys }
 }

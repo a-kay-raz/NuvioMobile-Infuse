@@ -514,7 +514,10 @@ internal fun PlayerControlsShell(
                         )
                     }
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = playerTextCutoutPadding(metrics))
+                            .playerEndTimeAnchor(),
                         verticalAlignment = Alignment.Bottom,
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
@@ -1098,7 +1101,7 @@ private fun ProgressControls(
 
     Column(modifier = modifier) {
         Row(
-            modifier = Modifier.fillMaxWidth().offset(y = (-19).dp).padding(horizontal = 12.dp),
+            modifier = Modifier.fillMaxWidth().offset(y = (-19).dp).padding(horizontal = 12.dp).playerEndTimeAnchor(),
             verticalAlignment = Alignment.Bottom,
         ) {
             Box(modifier = Modifier.weight(1f)) {

@@ -54,6 +54,27 @@ private data class CloudHomeSectionsResult(
     val errorMessage: String?,
 )
 
+/** Separator between a plugin id and a MainAPI class name in a Home CS3 selection id. */
+private const val CLOUDSTREAM_API_SELECTION_SEPARATOR = "|"
+
+/** Selection id for one MainAPI of a plugin: "<pluginId>|<apiClassName>". */
+internal fun cloudStreamApiSelectionId(pluginIdValue: String, apiClassName: String): String =
+    "$pluginIdValue$CLOUDSTREAM_API_SELECTION_SEPARATOR$apiClassName"
+
+/**
+ * Splits a Home CS3 selection id into (plugin id, MainAPI class name).
+ * Returns null for a plain plugin id (a legacy selection: the whole plugin)
+ * or a malformed id.
+ */
+internal fun parseCloudStreamApiSelectionId(selectionId: String): Pair<String, String>? {
+    val separator = selectionId.indexOf(CLOUDSTREAM_API_SELECTION_SEPARATOR)
+    if (separator <= 0 || separator == selectionId.lastIndex) return null
+    val pluginId = selectionId.substring(0, separator)
+    val apiClassName = selectionId.substring(separator + 1)
+    if (pluginId.isBlank() || apiClassName.isBlank()) return null
+    return pluginId to apiClassName
+}
+
 object HomeRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -117,12 +138,20 @@ object HomeRepository {
         val cloudState = CloudStreamRepository.uiState.value
         val selectedProviderId = _selectedCloudStreamProviderId.value
         val runnableCloudPlugins = cloudState.plugins.filter(CloudStreamPluginItem::isRunnable)
+        // A selection is a whole plugin (a legacy stored id), one of its
+        // MainAPIs ("<pluginId>|<apiClassName>"), "all" or "off". A legacy
+        // plugin id keeps meaning the whole plugin, so stored selections
+        // survive this change without a re-pick.
+        val selectedApi = selectedProviderId?.let(::parseCloudStreamApiSelectionId)
         val effectiveSelectedProviderId = when (selectedProviderId) {
             "all" -> "all"
             "off" -> null
-            else -> selectedProviderId?.takeIf { id -> runnableCloudPlugins.any { it.metadata.id.value == id } }
-                ?: if (selectedProviderId == "off") null else runnableCloudPlugins.firstOrNull()?.metadata?.id?.value
+            else -> selectedApi?.first?.takeIf { pluginId -> runnableCloudPlugins.any { it.metadata.id.value == pluginId } }
+                ?: selectedProviderId?.takeIf { id -> runnableCloudPlugins.any { it.metadata.id.value == id } }
+                ?: runnableCloudPlugins.firstOrNull()?.metadata?.id?.value
         }
+        val effectiveApiClassName = if (effectiveSelectedProviderId == "all") null
+            else selectedApi?.second?.takeIf { effectiveSelectedProviderId == selectedApi?.first }
         val cloudPlugins = when (effectiveSelectedProviderId) {
             "all" -> runnableCloudPlugins
             null -> emptyList()
@@ -177,7 +206,7 @@ object HomeRepository {
             var cloudErrorMessage: String? = null
             coroutineScope {
                 launch {
-                    val cloudResult = loadCloudSections(cloudPlugins, requestKey)
+                    val cloudResult = loadCloudSections(cloudPlugins, requestKey, effectiveApiClassName)
                     if (activeRequestKey == requestKey) {
                         cachedCloudSections = cloudResult.sections
                         cloudErrorMessage = cloudResult.errorMessage
@@ -705,6 +734,7 @@ object HomeRepository {
     private suspend fun loadCloudSections(
         plugins: List<CloudStreamPluginItem>,
         requestKey: String,
+        apiClassName: String? = null,
     ): CloudHomeSectionsResult {
         val sections = mutableListOf<HomeCatalogSection>()
         var firstError: String? = null
@@ -716,7 +746,7 @@ object HomeRepository {
                     launch {
                         val result = gate.withPermit {
                             val mainPage = withTimeoutOrNull(HOME_CLOUDSTREAM_PROVIDER_TIMEOUT_MS) {
-                                CloudStreamRepository.getMainPage(plugin.metadata.id.value, page = 1)
+                                CloudStreamRepository.getMainPage(plugin.metadata.id.value, page = 1, apiClassName = apiClassName)
                             }
                             if (mainPage == null) {
                                 CloudHomeProviderResult(emptyList(), "${plugin.metadata.name} timed out")
@@ -746,6 +776,7 @@ object HomeRepository {
                                                     categoryName = categoryName,
                                                     contentType = deduplicatedItems.first().type.nuvioType,
                                                     supportsPagination = false,
+                                                    apiClassName = apiClassName,
                                                 ),
                                                 items = previews,
                                                 availableItemCount = deduplicatedItems.size,

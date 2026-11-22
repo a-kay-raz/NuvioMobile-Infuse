@@ -56,6 +56,8 @@ sealed interface CatalogTarget {
         val searchQuery: String? = null,
         override val contentType: String,
         override val supportsPagination: Boolean = false,
+        /** MainAPI class name when a Home selection picked one API of the plugin; null = whole plugin. */
+        val apiClassName: String? = null,
     ) : CatalogTarget
 }
 

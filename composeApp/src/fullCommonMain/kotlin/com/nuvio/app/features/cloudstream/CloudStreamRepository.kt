@@ -486,15 +486,16 @@ actual object CloudStreamRepository {
     actual suspend fun getMainPage(
         providerId: String,
         page: Int,
+        apiClassName: String?,
     ): Result<List<Pair<String, List<CloudStreamSearchItem>>>> {
         val normalizedPage = page.coerceAtLeast(1)
-        val requestKey = providerId + ":" + normalizedPage
+        val requestKey = providerId + ":" + (apiClassName ?: "-") + ":" + normalizedPage
         RuntimeDiagnostics.recordLog("cs-mainpage-start id=$providerId page=$normalizedPage")
 
         val request = synchronized(mainPageRequestMutex) {
             mainPageRequests[requestKey]?.takeIf { it.isActive && !it.isCancelled }
                 ?: scope.async(start = CoroutineStart.DEFAULT) {
-                    providerResult(providerId) { getMainPage(normalizedPage) }
+                    providerResult(providerId, apiClassName) { getMainPage(normalizedPage) }
                 }.also { deferred ->
                     mainPageRequests[requestKey] = deferred
                     deferred.invokeOnCompletion {
@@ -952,6 +953,7 @@ actual object CloudStreamRepository {
 
     private suspend fun <T> providerResult(
         providerId: String,
+        apiClassName: String? = null,
         block: suspend CloudStreamProvider.() -> T,
     ): Result<T> {
         initialize()
@@ -961,8 +963,8 @@ actual object CloudStreamRepository {
         return runCatching {
             val plugin = _uiState.value.plugins.firstOrNull { it.metadata.id.value == providerId }
                 ?: error("CloudStream plugin was not found")
-            val provider = CloudStreamProviderRegistry.find(providerId)
-                ?: CloudStreamPlatformRuntime.provider(plugin)
+            val provider = if (apiClassName == null) CloudStreamProviderRegistry.find(providerId) else null
+                ?: CloudStreamPlatformRuntime.provider(plugin, apiClassName)
                 ?: error("CloudStream provider adapter was not found")
             provider.block()
         }

@@ -86,7 +86,7 @@ expect object CloudStreamRepository {
     fun setPluginApiEnabled(pluginId: String, apiClassName: String, enabled: Boolean)
     fun removePlugin(pluginId: String)
 
-    suspend fun getMainPage(providerId: String, page: Int = 1): Result<List<Pair<String, List<CloudStreamSearchItem>>>>
+    suspend fun getMainPage(providerId: String, page: Int = 1, apiClassName: String? = null): Result<List<Pair<String, List<CloudStreamSearchItem>>>>
     suspend fun search(query: String, providerId: String? = null): List<Result<List<CloudStreamSearchItem>>>
     suspend fun loadByExternalId(providerId: String, externalId: String): Result<CloudStreamLoadItem?>
     suspend fun load(providerId: String, data: String): Result<CloudStreamLoadItem>

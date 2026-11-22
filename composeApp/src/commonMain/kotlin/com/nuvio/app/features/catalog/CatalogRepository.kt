@@ -181,7 +181,7 @@ object CatalogRepository {
                                 .orEmpty()
                                 .map { it.toMetaPreview() }
                         } else {
-                            val sections = CloudStreamRepository.getMainPage(target.providerId, pageNumber).getOrThrow()
+                            val sections = CloudStreamRepository.getMainPage(target.providerId, pageNumber, apiClassName = target.apiClassName).getOrThrow()
                             val matchingSection = sections.firstOrNull { it.first == target.categoryName }
                                 ?: sections.firstOrNull { it.first.equals(target.categoryName, ignoreCase = true) }
                                 ?: sections.firstOrNull { it.first.contains(target.categoryName, ignoreCase = true) || target.categoryName.contains(it.first, ignoreCase = true) }

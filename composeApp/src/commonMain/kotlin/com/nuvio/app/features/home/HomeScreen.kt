@@ -60,8 +60,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.cloudstream.CloudStreamPlatformRuntime
 import com.nuvio.app.features.cloudstream.CloudStreamPluginItem
 import com.nuvio.app.features.cloudstream.CloudStreamRepository
+import com.nuvio.app.features.cloudstream.Cs3PluginApi
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.core.network.NetworkCondition
@@ -153,6 +155,8 @@ import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.home.components.HomeCollectionRowSection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -244,22 +248,66 @@ fun HomeScreen(
             .filter(CloudStreamPluginItem::isRunnable)
             .sortedBy { it.metadata.name.lowercase() }
     }
+    // One Home entry per enabled MainAPI of each runnable plugin, so a
+    // multi-provider plugin (Moviesmod + TopMovies) shows both in the
+    // selector. APIs resolve lazily: until a plugin's APIs load, it shows
+    // as one entry under its own name, so the pill never waits on a DEX
+    // load. Disabled APIs (gear dialog toggles) never become entries.
+    var cloudStreamApisByPlugin by remember { mutableStateOf<Map<String, List<Cs3PluginApi>>>(emptyMap()) }
+    LaunchedEffect(cloudStreamUiState.registryRevision, runnableCloudStreamProviders) {
+        val missing = runnableCloudStreamProviders.filter { it.metadata.id.value !in cloudStreamApisByPlugin }
+        if (missing.isEmpty()) return@LaunchedEffect
+        val loaded = missing.map { plugin ->
+            async {
+                plugin.metadata.id.value to CloudStreamPlatformRuntime.getCs3PluginApis(plugin)
+            }
+        }.awaitAll()
+        val fresh = loaded.mapNotNull { (id, apis) -> apis?.let { id to it } }.toMap()
+        if (fresh.isNotEmpty()) cloudStreamApisByPlugin = cloudStreamApisByPlugin + fresh
+    }
+    val cloudStreamHomeEntries = remember(runnableCloudStreamProviders, cloudStreamApisByPlugin) {
+        runnableCloudStreamProviders.flatMap { plugin ->
+            val apis = cloudStreamApisByPlugin[plugin.metadata.id.value]
+                ?.filter { it.className !in plugin.disabledApiClassNames }
+            if (apis.isNullOrEmpty()) {
+                listOf(
+                    CloudStreamHomeEntry(
+                        id = plugin.metadata.id.value,
+                        label = plugin.metadata.name,
+                        pluginName = plugin.metadata.name,
+                        apiClassName = null,
+                    ),
+                )
+            } else {
+                apis.map { api ->
+                    CloudStreamHomeEntry(
+                        id = cloudStreamApiSelectionId(plugin.metadata.id.value, api.className),
+                        label = api.displayName,
+                        pluginName = plugin.metadata.name,
+                        apiClassName = api.className,
+                    )
+                }
+            }
+        }
+    }
     val selectedCloudStreamProviderId by HomeRepository.selectedCloudStreamProviderId.collectAsStateWithLifecycle()
     val cloudStreamSelectionRestored by HomeRepository.cloudStreamSelectionRestored.collectAsStateWithLifecycle()
 
-    LaunchedEffect(runnableCloudStreamProviders, selectedCloudStreamProviderId, cloudStreamSelectionRestored) {
+    LaunchedEffect(cloudStreamHomeEntries, selectedCloudStreamProviderId, cloudStreamSelectionRestored) {
         // Don't default anything until the stored selection has been restored:
         // on app open the flow starts as null, and defaulting here would
         // overwrite (and persist) the saved provider with the first one.
         if (!cloudStreamSelectionRestored) return@LaunchedEffect
-        if (runnableCloudStreamProviders.isNotEmpty()) {
-            if (selectedCloudStreamProviderId == null) {
-                HomeRepository.setSelectedCloudStreamProvider(runnableCloudStreamProviders.first().metadata.id.value)
-            } else if (selectedCloudStreamProviderId != "off" &&
-                selectedCloudStreamProviderId != "all" &&
-                runnableCloudStreamProviders.none { it.metadata.id.value == selectedCloudStreamProviderId }
-            ) {
-                HomeRepository.setSelectedCloudStreamProvider(runnableCloudStreamProviders.first().metadata.id.value)
+        if (cloudStreamHomeEntries.isNotEmpty()) {
+            // A stored id is valid as an API entry, a legacy whole-plugin id,
+            // "all" or "off". Anything else (a removed plugin) defaults to
+            // the first entry.
+            val stored = selectedCloudStreamProviderId
+            val storedIsValid = stored == "all" || stored == "off" ||
+                cloudStreamHomeEntries.any { it.id == stored } ||
+                runnableCloudStreamProviders.any { it.metadata.id.value == stored }
+            if (stored == null || !storedIsValid) {
+                HomeRepository.setSelectedCloudStreamProvider(cloudStreamHomeEntries.first().id)
             }
         } else if (selectedCloudStreamProviderId != null && selectedCloudStreamProviderId != "off") {
             HomeRepository.setSelectedCloudStreamProvider(null)
@@ -1477,6 +1525,7 @@ fun HomeScreen(
                             item(key = "cloudstream_provider_selector", contentType = "cloudstream_selector") {
                                 CloudStreamProviderSelectorHeader(
                                     providers = runnableCloudStreamProviders,
+                                    entries = cloudStreamHomeEntries,
                                     selectedProviderId = selectedCloudStreamProviderId,
                                     menuExpanded = cloudStreamProviderMenuExpanded,
                                     onMenuExpandedChange = { cloudStreamProviderMenuExpanded = it },
@@ -1514,8 +1563,18 @@ fun HomeScreen(
 }
 
 @Composable
+/** One selectable row in the Home CloudStream selector: a whole plugin while its
+ * APIs are still loading (apiClassName = null), or one MainAPI of a plugin. */
+private data class CloudStreamHomeEntry(
+    val id: String,
+    val label: String,
+    val pluginName: String,
+    val apiClassName: String?,
+)
+
 private fun CloudStreamProviderSelectorHeader(
     providers: List<CloudStreamPluginItem>,
+    entries: List<CloudStreamHomeEntry>,
     selectedProviderId: String?,
     menuExpanded: Boolean,
     onMenuExpandedChange: (Boolean) -> Unit,
@@ -1542,14 +1601,16 @@ private fun CloudStreamProviderSelectorHeader(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            val isCs3Active = (selectedProviderId != null && selectedProviderId != "off") && providers.isNotEmpty()
-            val selectedCloudStreamProvider = providers.firstOrNull {
-                it.metadata.id.value == selectedProviderId && selectedProviderId != "off"
+            val isCs3Active = (selectedProviderId != null && selectedProviderId != "off") && entries.isNotEmpty()
+            val selectedEntry = entries.firstOrNull {
+                it.id == selectedProviderId && selectedProviderId != "off"
             }
             val pillLabel = when {
                 isCs3Active -> {
                     if (selectedProviderId == "all") "All CS3"
-                    else (selectedCloudStreamProvider?.metadata?.name ?: "CloudStream")
+                    else selectedEntry?.label
+                        ?: providers.firstOrNull { it.metadata.id.value == selectedProviderId }?.metadata?.name
+                        ?: "CloudStream"
                 }
                 else -> "Extensions"
             }
@@ -1601,7 +1662,7 @@ private fun CloudStreamProviderSelectorHeader(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    val hasAnyExtensions = providers.isNotEmpty()
+                    val hasAnyExtensions = entries.isNotEmpty()
                     val isAllExtensionsSelected = selectedProviderId == "all"
 
                     if (hasAnyExtensions) {
@@ -1682,7 +1743,7 @@ private fun CloudStreamProviderSelectorHeader(
                         Spacer(modifier = Modifier.height(2.dp))
                     }
 
-                    if (providers.isNotEmpty()) {
+                    if (entries.isNotEmpty()) {
                         Text(
                             text = "CLOUDSTREAM",
                             style = MaterialTheme.typography.labelSmall,
@@ -1690,8 +1751,8 @@ private fun CloudStreamProviderSelectorHeader(
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         )
-                        providers.forEach { provider ->
-                            val isSelected = provider.metadata.id.value == selectedProviderId && selectedProviderId != "off"
+                        entries.forEach { entry ->
+                            val isSelected = entry.id == selectedProviderId && selectedProviderId != "off"
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1704,7 +1765,7 @@ private fun CloudStreamProviderSelectorHeader(
                                         }
                                     )
                                     .clickable {
-                                        val next = if (isSelected) "off" else provider.metadata.id.value
+                                        val next = if (isSelected) "off" else entry.id
                                         onProviderSelected(next)
                                     }
                                     .padding(horizontal = 7.dp, vertical = 6.dp),
@@ -1738,15 +1799,27 @@ private fun CloudStreamProviderSelectorHeader(
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(7.dp))
-                                Text(
-                                    text = provider.metadata.name,
-                                    color = if (isSelected) themeOnSurface else themeOnSurface.copy(alpha = 0.85f),
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                    fontSize = 12.sp,
+                                Column(
                                     modifier = Modifier.weight(1f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                ) {
+                                    Text(
+                                        text = entry.label,
+                                        color = if (isSelected) themeOnSurface else themeOnSurface.copy(alpha = 0.85f),
+                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    if (entry.apiClassName != null && entry.pluginName != entry.label) {
+                                        Text(
+                                            text = entry.pluginName,
+                                            color = themeOnSurface.copy(alpha = 0.55f),
+                                            fontSize = 11.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                }
                                 Spacer(modifier = Modifier.width(6.dp))
                                 if (isSelected) {
                                     Icon(

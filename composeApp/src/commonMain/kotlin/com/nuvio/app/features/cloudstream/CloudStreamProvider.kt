@@ -13,7 +13,14 @@ internal expect object CloudStreamPlatformRuntime {
     val supportsAndroidDex: Boolean
 
     fun initialize(context: Any?)
-    suspend fun provider(plugin: CloudStreamPluginItem): CloudStreamProvider?
+
+    /**
+     * Builds the provider serving a plugin's catalogs. When [apiClassName] is
+     * given, only that MainAPI serves content (the Home selector's per-API
+     * pick); a name that matches no enabled API falls back to all enabled
+     * APIs, so a stale selection never blanks the Home screen.
+     */
+    suspend fun provider(plugin: CloudStreamPluginItem, apiClassName: String? = null): CloudStreamProvider?
     fun unload(pluginId: String)
     suspend fun registerNativeRepository(url: String, name: String, iconUrl: String?)
     suspend fun removeNativeRepository(url: String)

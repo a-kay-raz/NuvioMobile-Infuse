@@ -99,13 +99,19 @@ internal actual object CloudStreamPlatformRuntime {
         hostInitialized = false
     }
 
-    actual suspend fun provider(plugin: CloudStreamPluginItem): CloudStreamProvider? {
+    actual suspend fun provider(plugin: CloudStreamPluginItem, apiClassName: String?): CloudStreamProvider? {
         if (plugin.compatibility.runtimeKind != CloudStreamRuntimeKind.AndroidDex) return null
         val loaded = loadOrGetPlugin(plugin)
         // Honor the user's per-provider toggles from the generic Plugin
         // Settings dialog: only enabled MainAPIs serve content.
         val enabledApis = loaded.providers.filter { it.javaClass.name !in plugin.disabledApiClassNames }
-        return enabledApis.takeIf { it.isNotEmpty() }
+        // The Home selector's per-API pick: serve only the named MainAPI.
+        // A stale name falls back to all enabled APIs, never to nothing.
+        val selectedApis = apiClassName
+            ?.let { name -> enabledApis.filter { it.javaClass.name == name } }
+            ?.takeIf { it.isNotEmpty() }
+            ?: enabledApis
+        return selectedApis.takeIf { it.isNotEmpty() }
             ?.let { AndroidDexCloudStreamProvider(plugin.metadata.id.value, it) }
     }
 

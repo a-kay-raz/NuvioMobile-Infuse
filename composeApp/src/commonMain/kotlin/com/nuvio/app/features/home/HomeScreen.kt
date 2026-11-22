@@ -303,9 +303,16 @@ fun HomeScreen(
             // "all" or "off". Anything else (a removed plugin) defaults to
             // the first entry.
             val stored = selectedCloudStreamProviderId
+            val storedApi = stored?.let(::parseCloudStreamApiSelectionId)
             val storedIsValid = stored == "all" || stored == "off" ||
                 cloudStreamHomeEntries.any { it.id == stored } ||
-                runnableCloudStreamProviders.any { it.metadata.id.value == stored }
+                runnableCloudStreamProviders.any { it.metadata.id.value == stored } ||
+                // An API id whose plugin is runnable is valid even before its
+                // APIs finish loading: without this the effect fires on app
+                // open while entries are still plugin-level, calls the saved
+                // API pick invalid, and resets (and persists) the first
+                // entry — every single launch.
+                (storedApi != null && runnableCloudStreamProviders.any { it.metadata.id.value == storedApi.first })
             if (stored == null || !storedIsValid) {
                 HomeRepository.setSelectedCloudStreamProvider(cloudStreamHomeEntries.first().id)
             }

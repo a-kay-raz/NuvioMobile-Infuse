@@ -963,7 +963,8 @@ actual object CloudStreamRepository {
         return runCatching {
             val plugin = _uiState.value.plugins.firstOrNull { it.metadata.id.value == providerId }
                 ?: error("CloudStream plugin was not found")
-            val provider = if (apiClassName == null) CloudStreamProviderRegistry.find(providerId) else null
+            val registryProvider = if (apiClassName == null) CloudStreamProviderRegistry.find(providerId) else null
+            val provider = registryProvider
                 ?: CloudStreamPlatformRuntime.provider(plugin, apiClassName)
                 ?: error("CloudStream provider adapter was not found")
             provider.block()

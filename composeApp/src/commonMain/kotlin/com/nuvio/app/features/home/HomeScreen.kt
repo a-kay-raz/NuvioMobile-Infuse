@@ -1562,7 +1562,6 @@ fun HomeScreen(
     }
 }
 
-@Composable
 /** One selectable row in the Home CloudStream selector: a whole plugin while its
  * APIs are still loading (apiClassName = null), or one MainAPI of a plugin. */
 private data class CloudStreamHomeEntry(
@@ -1572,6 +1571,7 @@ private data class CloudStreamHomeEntry(
     val apiClassName: String?,
 )
 
+@Composable
 private fun CloudStreamProviderSelectorHeader(
     providers: List<CloudStreamPluginItem>,
     entries: List<CloudStreamHomeEntry>,

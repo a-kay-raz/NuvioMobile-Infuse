@@ -101,33 +101,78 @@ internal actual object CloudStreamPlatformRuntime {
 
     actual suspend fun provider(plugin: CloudStreamPluginItem): CloudStreamProvider? {
         if (plugin.compatibility.runtimeKind != CloudStreamRuntimeKind.AndroidDex) return null
-        return withContext(Dispatchers.IO) {
-            var loadedNow = false
-            val loadedPlugin = loadMutex.withLock {
-                synchronized(loadedLock) {
-                    loaded[plugin.metadata.id.value]
-                        ?: loadPlugin(plugin).also {
-                            loaded[plugin.metadata.id.value] = it
-                            loadedNow = true
-                        }
-                }
+        val loaded = loadOrGetPlugin(plugin)
+        // Honor the user's per-provider toggles from the generic Plugin
+        // Settings dialog: only enabled MainAPIs serve content.
+        val enabledApis = loaded.providers.filter { it.javaClass.name !in plugin.disabledApiClassNames }
+        return enabledApis.takeIf { it.isNotEmpty() }
+            ?.let { AndroidDexCloudStreamProvider(plugin.metadata.id.value, it) }
+    }
+
+    actual suspend fun getCs3PluginApis(plugin: CloudStreamPluginItem): List<Cs3PluginApi>? {
+        if (!plugin.isInstalled) return null
+        if (plugin.compatibility.runtimeKind != CloudStreamRuntimeKind.AndroidDex) return null
+        val context = getContext() ?: return null
+        prepareHostContext(context)
+        // Best-effort load so a first open right after install still lists
+        // providers. A slow or failing load must not block the dialog.
+        val loaded = runCatching {
+            withTimeoutOrNull(CS3_SETTINGS_LOAD_TIMEOUT_MS) { loadOrGetPlugin(plugin) }
+        }.getOrNull() ?: return null
+        return loaded.providers.map { api ->
+            Cs3PluginApi(className = api.javaClass.name, displayName = api.name)
+        }
+    }
+
+    actual suspend fun openCs3PluginNativeSettings(plugin: CloudStreamPluginItem): Boolean {
+        if (!plugin.isInstalled) return false
+        if (plugin.compatibility.runtimeKind != CloudStreamRuntimeKind.AndroidDex) return false
+        val context = getContext() ?: return false
+        prepareHostContext(context)
+        val loaded = runCatching {
+            withTimeoutOrNull(CS3_SETTINGS_LOAD_TIMEOUT_MS) { loadOrGetPlugin(plugin) }
+        }.getOrNull() ?: return false
+        val pluginInstance = loaded.instance as? Plugin ?: return false
+        val openSettings = pluginInstance.openSettings ?: return false
+        // A plugin's own UI (for example a platform AlertDialog) needs
+        // an Activity window token: the host MainActivity is kept in
+        // activityReference by initialize() (see MainActivity.onCreate). The
+        // identity context is only a fallback — invoking with it fails.
+        val settingsContext = activityReference?.get() ?: loaded.context
+        return runCatching {
+            withContext(Dispatchers.Main) { openSettings(settingsContext) }
+            true
+        }.onFailure { error ->
+            log.e(error) { "Failed to open native settings for ${plugin.metadata.internalName}" }
+        }.getOrDefault(false)
+    }
+
+    private suspend fun loadOrGetPlugin(plugin: CloudStreamPluginItem): LoadedPlugin = withContext(Dispatchers.IO) {
+        var loadedNow = false
+        val loadedPlugin = loadMutex.withLock {
+            synchronized(loadedLock) {
+                loaded[plugin.metadata.id.value]
+                    ?: loadPlugin(plugin).also {
+                        loaded[plugin.metadata.id.value] = it
+                        loadedNow = true
+                    }
             }
-            if (loadedNow) {
-                // Reconcile synchronous repository registrations immediately, then give
-                // asynchronous bootstrap plugins a bounded background window to publish
-                // RepositoryManager entries just like the real CloudStream host does.
-                syncNativeRepositories()
-                if (loadedPlugin.providers.isEmpty()) {
-                    backgroundScope.launch {
-                        repeat(NATIVE_REPOSITORY_SYNC_ATTEMPTS - 1) {
-                            delay(NATIVE_REPOSITORY_SYNC_DELAY_MS)
-                            syncNativeRepositories()
-                        }
+        }
+        if (loadedNow) {
+            // Reconcile synchronous repository registrations immediately, then give
+            // asynchronous bootstrap plugins a bounded background window to publish
+            // RepositoryManager entries just like the real CloudStream host does.
+            syncNativeRepositories()
+            if (loadedPlugin.providers.isEmpty()) {
+                backgroundScope.launch {
+                    repeat(NATIVE_REPOSITORY_SYNC_ATTEMPTS - 1) {
+                        delay(NATIVE_REPOSITORY_SYNC_DELAY_MS)
+                        syncNativeRepositories()
                     }
                 }
             }
-            loadedPlugin.provider
         }
+        loadedPlugin
     }
 
     actual suspend fun registerNativeRepository(url: String, name: String, iconUrl: String?) {
@@ -460,6 +505,8 @@ internal actual object CloudStreamPlatformRuntime {
     private const val DEFAULT_HTTP_TIMEOUT_SECONDS = 120L
     private const val NATIVE_REPOSITORY_SYNC_ATTEMPTS = 16
     private const val NATIVE_REPOSITORY_SYNC_DELAY_MS = 500L
+
+    private const val CS3_SETTINGS_LOAD_TIMEOUT_MS = 20_000L
 
     private const val CLOUDSTREAM_REPOSITORY_MANAGER_CLASS = "com.lagradost.cloudstream3.plugins.RepositoryManager"
     private const val CLOUDSTREAM_REPOSITORY_DATA_CLASS = "com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData"

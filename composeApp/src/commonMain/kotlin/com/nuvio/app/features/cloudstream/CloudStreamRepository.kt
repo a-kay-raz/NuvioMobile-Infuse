@@ -18,6 +18,8 @@ data class CloudStreamPluginItem(
     val verified: Boolean = false,
     val isInstalling: Boolean = false,
     val errorMessage: String? = null,
+    /** MainAPI class names the user disabled for this plugin. */
+    val disabledApiClassNames: List<String> = emptyList(),
 ) {
     val isInstalled: Boolean
         get() = installedVersion != null
@@ -35,6 +37,7 @@ data class CloudStreamUiState(
     val plugins: List<CloudStreamPluginItem> = emptyList(),
     val registryRevision: Long = 0L,
     val securityWarningAccepted: Boolean = false,
+    val gearButtonUi: CloudStreamGearButtonUi = CloudStreamGearButtonUi.CLOUDSTREAM,
 )
 
 sealed interface AddCloudStreamRepositoryResult {
@@ -67,6 +70,7 @@ expect object CloudStreamRepository {
     fun onProfileChanged(profileId: Int)
     fun clearLocalState()
     fun acceptSecurityWarning()
+    fun setGearButtonUi(ui: CloudStreamGearButtonUi)
 
     suspend fun addRepository(rawUrl: String): AddCloudStreamRepositoryResult
     suspend fun discoverRepositories(rawInput: String): Result<Int>
@@ -79,6 +83,7 @@ expect object CloudStreamRepository {
     suspend fun updatePlugin(pluginId: String): CloudStreamInstallResult
     suspend fun installAndEnablePlugins(pluginIds: List<String>): CloudStreamBulkInstallResult
     fun setPluginEnabled(pluginId: String, enabled: Boolean)
+    fun setPluginApiEnabled(pluginId: String, apiClassName: String, enabled: Boolean)
     fun removePlugin(pluginId: String)
 
     suspend fun getMainPage(providerId: String, page: Int = 1): Result<List<Pair<String, List<CloudStreamSearchItem>>>>

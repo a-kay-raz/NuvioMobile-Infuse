@@ -120,6 +120,12 @@ actual object CloudStreamRepository {
         persist()
     }
 
+    actual fun setGearButtonUi(ui: CloudStreamGearButtonUi) {
+        initialize()
+        _uiState.update { it.copy(gearButtonUi = ui) }
+        persist()
+    }
+
     actual suspend fun addRepository(rawUrl: String): AddCloudStreamRepositoryResult {
         initialize()
         val manifestUrl = runCatching { resolveCloudStreamRepositoryInput(rawUrl) }
@@ -429,6 +435,26 @@ actual object CloudStreamRepository {
             val enabledPlugin = _uiState.value.plugins.firstOrNull { it.metadata.id.value == pluginId }
             if (enabledPlugin?.isRunnable == true) {
             }
+        }
+        persist()
+    }
+
+    actual fun setPluginApiEnabled(pluginId: String, apiClassName: String, enabled: Boolean) {
+        initialize()
+        _uiState.update { current ->
+            var changed = false
+            val plugins = current.plugins.map { item ->
+                if (item.metadata.id.value != pluginId) return@map item
+                val disabled = item.disabledApiClassNames.toMutableSet()
+                if (enabled) disabled.remove(apiClassName) else disabled.add(apiClassName)
+                val next = disabled.toList()
+                changed = next != item.disabledApiClassNames
+                item.copy(disabledApiClassNames = next)
+            }
+            current.copy(
+                plugins = plugins,
+                registryRevision = current.registryRevision + if (changed) 1 else 0,
+            )
         }
         persist()
     }
@@ -829,6 +855,7 @@ actual object CloudStreamRepository {
                 installedAtEpochMs = plugin.installedAtEpochMs.takeIf { packageExists } ?: 0L,
                 enabled = plugin.enabled && isRepoEnabled && packageExists && plugin.verified && compatibility.isRunnable && metadata.status.canInstall,
                 verified = plugin.verified && packageExists,
+                disabledApiClassNames = plugin.disabledApis,
             )
         }
         return CloudStreamUiState(
@@ -836,6 +863,8 @@ actual object CloudStreamRepository {
             plugins = plugins,
             registryRevision = 1,
             securityWarningAccepted = stored.securityWarningAccepted,
+            gearButtonUi = runCatching { CloudStreamGearButtonUi.valueOf(stored.gearButtonUi) }
+                .getOrDefault(CloudStreamGearButtonUi.CLOUDSTREAM),
         )
     }
 
@@ -855,6 +884,7 @@ actual object CloudStreamRepository {
             },
             plugins = current.plugins.map { item -> item.toStored() },
             securityWarningAccepted = current.securityWarningAccepted,
+            gearButtonUi = current.gearButtonUi.name,
         )
         CloudStreamPlatformStorage.saveState(currentProfileId, json.encodeToString(stored))
     }
@@ -879,6 +909,7 @@ actual object CloudStreamRepository {
         enabled = enabled,
         verified = verified,
         installedAtEpochMs = installedAtEpochMs.takeIf { installedVersion != null } ?: 0L,
+        disabledApis = disabledApiClassNames,
     )
 
     private fun StoredCloudStreamPlugin.toMetadata(): CloudStreamPluginMetadata {

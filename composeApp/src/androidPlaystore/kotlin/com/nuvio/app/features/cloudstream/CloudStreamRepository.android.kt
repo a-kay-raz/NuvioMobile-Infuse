@@ -11,6 +11,7 @@ actual object CloudStreamRepository {
     actual fun onProfileChanged(profileId: Int) = Unit
     actual fun clearLocalState() = Unit
     actual fun acceptSecurityWarning() = Unit
+    actual fun setGearButtonUi(ui: CloudStreamGearButtonUi) = Unit
     actual suspend fun addRepository(rawUrl: String): AddCloudStreamRepositoryResult = AddCloudStreamRepositoryResult.Error("CloudStream is available only in full builds")
     actual suspend fun discoverRepositories(rawInput: String): Result<Int> = Result.failure(UnsupportedOperationException("CloudStream is available only in full builds"))
     actual fun refreshRepository(manifestUrl: String) = Unit
@@ -33,6 +34,7 @@ actual object CloudStreamRepository {
             ),
         )
     actual fun setPluginEnabled(pluginId: String, enabled: Boolean) = Unit
+    actual fun setPluginApiEnabled(pluginId: String, apiClassName: String, enabled: Boolean) = Unit
     actual fun removePlugin(pluginId: String) = Unit
     actual suspend fun getMainPage(providerId: String, page: Int) = Result.failure<List<Pair<String, List<CloudStreamSearchItem>>>>(UnsupportedOperationException())
     actual suspend fun search(query: String, providerId: String?) = emptyList<Result<List<CloudStreamSearchItem>>>()

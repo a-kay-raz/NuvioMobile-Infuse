@@ -9,4 +9,7 @@ internal actual object CloudStreamPlatformRuntime {
     actual suspend fun removeNativeRepository(url: String) = Unit
     actual fun unload(pluginId: String) = Unit
     actual fun clear() = Unit
+
+    actual suspend fun getCs3PluginApis(plugin: CloudStreamPluginItem): List<Cs3PluginApi>? = null
+    actual suspend fun openCs3PluginNativeSettings(plugin: CloudStreamPluginItem): Boolean = false
 }

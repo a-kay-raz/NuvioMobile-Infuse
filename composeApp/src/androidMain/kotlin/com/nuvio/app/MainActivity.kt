@@ -133,7 +133,7 @@ open class MainActivity : AppCompatActivity() {
         AddonHttpClientProvider.initialize(applicationContext)
         AddonStorage.initialize(applicationContext)
         com.nuvio.app.features.cloudstream.CloudStreamPlatformStorage.initialize(this)
-        com.nuvio.app.features.cloudstream.CloudStreamPlatformRuntime.initialize(applicationContext)
+        com.nuvio.app.features.cloudstream.CloudStreamPlatformRuntime.initialize(this)
         AuthStorage.initialize(applicationContext)
         ServerConfigurationStorage.initialize(applicationContext)
         LibraryStorage.initialize(applicationContext)

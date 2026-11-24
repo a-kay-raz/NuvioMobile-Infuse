@@ -746,7 +746,7 @@ internal fun AppGate(
                 androidx.compose.animation.AnimatedVisibility(
                     visible = profileSelectionTransitionActive,
                     enter = fadeIn(tween(180)),
-                    exit = fadeOut(tween(180)),
+                    exit = fadeOut(tween(450)),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     AppLoadingContent(

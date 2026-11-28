@@ -34,6 +34,7 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
     }
 
     func loadFile(url: String) { ensurePlayerViewController().loadFile(url) }
+    func setDemuxerLavfOptions(options: String) { ensurePlayerViewController().demuxerLavfOptions = options }
     func loadFileWithAudio(videoUrl: String, audioUrl: String?, headersJson: String?, subtitlesJson: String?) {
         ensurePlayerViewController().loadFile(
             videoUrl,
@@ -156,6 +157,7 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
     }
 
     // Audio tracks
+    func getTracksGeneration() -> Int64 { playerVC?.tracksGeneration ?? -1 }
     func getAudioTrackCount() -> Int32 { Int32(playerVC?.audioTracks.count ?? 0) }
     func getAudioTrackIndex(at: Int32) -> Int32 {
         guard let t = playerVC?.audioTracks, Int(at) < t.count else { return 0 }
@@ -200,6 +202,10 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
         guard let t = playerVC?.subtitleTracks, Int(at) < t.count else { return false }
         return t[Int(at)].selected
     }
+    func getSubtitleTrackCodec(at: Int32) -> String {
+        guard let t = playerVC?.subtitleTracks, Int(at) < t.count else { return "" }
+        return t[Int(at)].codec
+    }
 
     func selectAudioTrack(trackId: Int32) { playerVC?.selectAudio(Int(trackId)) }
     func selectSubtitleTrack(trackId: Int32) { playerVC?.selectSubtitle(Int(trackId)) }
@@ -224,7 +230,9 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
         subPos: Int32,
         stripSdh: Bool,
         styledOverlay: Bool,
-        outlineBlur: Int32
+        outlineBlur: Int32,
+        customizeAss: Bool,
+        assScale: Double
     ) {
         playerVC?.applySubtitleStyle(
             textColor: textColor,
@@ -236,7 +244,9 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
             subPos: Int(subPos),
             stripSdh: stripSdh,
             styledOverlay: styledOverlay,
-            outlineBlur: Int(outlineBlur)
+            outlineBlur: Int(outlineBlur),
+            customizeAss: customizeAss,
+            assScale: assScale
         )
     }
 
@@ -293,12 +303,13 @@ struct PluginSubtitle {
 
 // MARK: - Track Info
 
-struct TrackInfo {
+struct TrackInfo: Equatable {
     let index: Int
     let id: Int
     let type: String
     let title: String
     let lang: String
+    let codec: String
     let selected: Bool
 }
 
@@ -307,6 +318,7 @@ private struct PendingLoadRequest {
     let audioUrl: String?
     let requestHeaders: [String: String]
     let subtitles: [PluginSubtitle]
+    let demuxerLavfOptions: String
     let queuedAtUptime: TimeInterval
 }
 
@@ -328,6 +340,14 @@ final class MPVPlayerViewController: UIViewController {
     private var usesStyledSubtitles = false
     private var styledSubtitleVisible = false
     private var lastSubtitleText = ""
+    private var currentCustomizeAss = false
+    private var currentAssScale = 1.0
+    private var currentSubtitleBold = false
+    private var currentSubtitlePos = 100
+    private var appliedAssOverride: String?
+    private var appliedAssScale = 1.0
+    private var appliedAssBold: Bool?
+    private var appliedSubPos: Int?
     private var pictureInPictureController: PlayerPictureInPictureController?
     var systemControlHandler: PlayerSystemControlHandler?
     var keepsPlaybackInBackground: Bool { pictureInPictureController?.keepsPlaybackAlive == true }
@@ -359,6 +379,13 @@ final class MPVPlayerViewController: UIViewController {
             guard let self, self.mpv != nil else { return }
             self.publishCachedNowPlayingInfoIfNeeded()
             self.syncNowPlayingPlaybackState(isPlaying: self.isPlayerPlaying)
+        }
+        controller.onRouteChanged = { [weak self] lostHeadphones in
+            guard let self, self.mpv != nil else { return }
+            if lostHeadphones {
+                if self.isPlayerPlaying { self.pausePlayback() }
+            }
+            self.audioHardwareChanged()
         }
         return controller
     }()
@@ -450,6 +477,8 @@ final class MPVPlayerViewController: UIViewController {
         let stripSdh: Bool
         let styledOverlay: Bool
         let outlineBlur: Int
+        let customizeAss: Bool
+        let assScale: Double
     }
 
     private var lastLoadRequest: PendingLoadRequest?
@@ -496,6 +525,9 @@ final class MPVPlayerViewController: UIViewController {
     private var throttledLogEntries: [String: ThrottledLogEntry] = [:]
 
     var audioTracks: [TrackInfo] = []
+    static let baseDemuxerLavfOptions = "protocol_whitelist=[file,crypto,data,http,https,tcp,tls]"
+    var demuxerLavfOptions = MPVPlayerViewController.baseDemuxerLavfOptions
+    private(set) var tracksGeneration: Int64 = 0
     var subtitleTracks: [TrackInfo] = []
     var isPlayerLoading: Bool = true
     var isPlayerPlaying: Bool = false
@@ -764,6 +796,48 @@ final class MPVPlayerViewController: UIViewController {
         }
     }
 
+    private var audioReloadWorkItem: DispatchWorkItem?
+    private var lastAudioReloadLatency: TimeInterval = 0
+
+    private func audioHardwareChanged() {
+        audioReloadWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, self.mpv != nil, !self.isPlayerDestroyed else { return }
+            self.reopenAudioOutput()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                guard let self, self.mpv != nil, !self.isPlayerDestroyed,
+                      abs(AVAudioSession.sharedInstance().outputLatency - self.lastAudioReloadLatency) > 0.03 else { return }
+                self.reopenAudioOutput()
+            }
+        }
+        audioReloadWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: item)
+    }
+
+    private func reopenAudioOutput() {
+        let session = AVAudioSession.sharedInstance()
+        lastAudioReloadLatency = session.outputLatency
+        InAppLogBridge.shared.info(
+            tag: "MPV/iOS",
+            message: "Audio output reopened: \(session.currentRoute.outputs.map(\.portType.rawValue).joined(separator: ",")) latency=\(Int(session.outputLatency * 1000))ms"
+        )
+        command("ao-reload", checkForErrors: false)
+        let generation = mpvGeneration
+        mpvQueue.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            guard let self, self.mpvGeneration == generation, self.mpv != nil, !self.getFlag("pause") else { return }
+            let before = self.getDouble("time-pos")
+            self.mpvQueue.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+                guard let self, self.mpvGeneration == generation, self.mpv != nil,
+                      !self.getFlag("pause"), !self.getFlag("seeking"),
+                      !self.getFlag("paused-for-cache"), !self.getFlag("eof-reached"),
+                      self.getDouble("time-pos") <= before + 0.05 else { return }
+                InAppLogBridge.shared.warn(tag: "MPV/iOS", message: "Playback stood still after a sound change; restarting it")
+                self.setFlag("pause", true)
+                self.setFlag("pause", false)
+            }
+        }
+    }
+
     private func renderScale() -> CGFloat {
         let screen = view.window?.screen ?? UIScreen.main
         return max(screen.scale, screen.nativeScale)
@@ -832,6 +906,7 @@ final class MPVPlayerViewController: UIViewController {
         setSetupOption("video-rotate", "no")
         setSetupOption("subs-match-os-language", "yes")
         setSetupOption("subs-fallback", "yes")
+        setSetupOption("sub-ass-override", "no")
         configureBundledSubtitleFont()
         setSetupOption("keep-open", "yes")
         setSetupOption("target-colorspace-hint", "yes")
@@ -844,7 +919,7 @@ final class MPVPlayerViewController: UIViewController {
             setSetupOption("correct-downscaling", "no")
             setSetupOption("dscale", "bilinear")
         }
-        setSetupOption("demuxer-lavf-o", "protocol_whitelist=[file,crypto,data,http,https,tcp,tls]")
+        setSetupOption("demuxer-lavf-o", Self.baseDemuxerLavfOptions)
 
         checkError(mpv_initialize(mpv))
         applyNightModeFilter()
@@ -1114,6 +1189,7 @@ final class MPVPlayerViewController: UIViewController {
             audioUrl: audioUrl,
             requestHeaders: requestHeaders,
             subtitles: subtitles,
+            demuxerLavfOptions: demuxerLavfOptions,
             queuedAtUptime: ProcessInfo.processInfo.systemUptime
         )
 
@@ -1161,6 +1237,7 @@ final class MPVPlayerViewController: UIViewController {
         )
         activeRequestHeaders = sanitizedHeaders
         applyRequestHeaders(sanitizedHeaders)
+        setStringProperty("demuxer-lavf-o", request.demuxerLavfOptions)
         isPlayerLoading = true
         isPlayerEnded = false
         playbackStateGeneration &+= 1
@@ -1415,6 +1492,7 @@ final class MPVPlayerViewController: UIViewController {
 
             self.metalLayer.setRenderingSuspended(false, reason: "device-loss-recovery")
             self.metalLayer.releasePendingDrawable()
+            self.reattachMetalLayerIfNeeded()
 
             self.setupMpv()
             guard self.mpv != nil else {
@@ -1422,6 +1500,7 @@ final class MPVPlayerViewController: UIViewController {
                 return
             }
 
+            self.resetAppliedSubtitleOverrides()
             self.reapplyRememberedSettings()
 
             guard let request = self.lastLoadRequest else {
@@ -1522,6 +1601,19 @@ final class MPVPlayerViewController: UIViewController {
         detach()
     }
 
+    private func reattachMetalLayerIfNeeded() {
+        guard metalLayer.superlayer == nil, isViewLoaded else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        if let displayLayer = pictureInPictureController?.displayLayer, displayLayer.superlayer === view.layer {
+            view.layer.insertSublayer(metalLayer, above: displayLayer)
+        } else {
+            view.layer.addSublayer(metalLayer)
+        }
+        CATransaction.commit()
+        layoutPlayerSurfaces()
+    }
+
     private func reapplyRememberedSettings() {
         if let settings = lastVideoOutputSettings {
             configureVideoOutput(
@@ -1555,7 +1647,9 @@ final class MPVPlayerViewController: UIViewController {
                 subPos: style.subPos,
                 stripSdh: style.stripSdh,
                 styledOverlay: style.styledOverlay,
-                outlineBlur: style.outlineBlur
+                outlineBlur: style.outlineBlur,
+                customizeAss: style.customizeAss,
+                assScale: style.assScale
             )
         }
         setSpeed(currentSpeed)
@@ -1907,7 +2001,9 @@ final class MPVPlayerViewController: UIViewController {
         subPos: Int,
         stripSdh: Bool,
         styledOverlay: Bool,
-        outlineBlur: Int
+        outlineBlur: Int,
+        customizeAss: Bool,
+        assScale: Double
     ) {
         lastSubtitleStyle = SubtitleStyleSettings(
             textColor: textColor,
@@ -1919,7 +2015,9 @@ final class MPVPlayerViewController: UIViewController {
             subPos: subPos,
             stripSdh: stripSdh,
             styledOverlay: styledOverlay,
-            outlineBlur: outlineBlur
+            outlineBlur: outlineBlur,
+            customizeAss: customizeAss,
+            assScale: assScale
         )
         guard mpv != nil else { return }
 
@@ -1930,7 +2028,6 @@ final class MPVPlayerViewController: UIViewController {
             ? max(Double(outlineSize), 1.0)
             : Double(outlineSize)
 
-        setStringProperty("sub-ass-override", "no")
         setStringProperty("sub-color", textColor)
         setStringProperty("sub-back-color", backgroundColor)
         setStringProperty("sub-outline-color", effectiveOutlineColor)
@@ -1939,16 +2036,55 @@ final class MPVPlayerViewController: UIViewController {
         setDoubleProperty("sub-outline-size", effectiveOutlineSize)
         setDoubleProperty("sub-blur", Double(outlineBlur))
         setDoubleProperty("sub-font-size", Double(fontSize))
-        setIntProperty("sub-pos", Int64(subPos))
         setStringProperty("sub-filter-sdh", stripSdh ? "yes" : "no")
         setStringProperty("sub-filter-sdh-harder", stripSdh ? "yes" : "no")
         usesStyledSubtitles = styledOverlay
+        currentCustomizeAss = customizeAss
+        currentAssScale = assScale
+        currentSubtitleBold = bold
+        currentSubtitlePos = subPos
         updateStyledSubtitle()
+    }
+
+    private func resetAppliedSubtitleOverrides() {
+        appliedAssOverride = nil
+        appliedAssScale = 1.0
+        appliedAssBold = nil
+        appliedSubPos = nil
     }
 
     private func updateStyledSubtitle() {
         guard mpv != nil else { return }
         let codec = getString("current-tracks/sub/codec") ?? ""
+        let assOverride = SubtitleRendering.shared.assOverride(
+            codec: codec,
+            customizeAss: currentCustomizeAss,
+            assScale: currentAssScale
+        )
+        if appliedAssOverride != assOverride {
+            checkError(mpv_set_property_string(mpv, "sub-ass-override", assOverride))
+            appliedAssOverride = assOverride
+        }
+        var scale = assOverride == "scale" ? currentAssScale : 1.0
+        if appliedAssScale != scale {
+            checkError(mpv_set_property(mpv, "sub-scale", MPV_FORMAT_DOUBLE, &scale))
+            appliedAssScale = scale
+        }
+        let targetSubPos = assOverride == "scale" ? 100 : currentSubtitlePos
+        if appliedSubPos != targetSubPos {
+            var position = Int64(targetSubPos)
+            checkError(mpv_set_property(mpv, "sub-pos", MPV_FORMAT_INT64, &position))
+            appliedSubPos = targetSubPos
+        }
+        let assBold: Bool? = assOverride == "force" ? currentSubtitleBold : nil
+        if appliedAssBold != assBold {
+            if let assBold {
+                command("change-list", args: ["sub-ass-style-overrides", "set", assBold ? "Bold=1" : "Bold=0"])
+            } else {
+                command("change-list", args: ["sub-ass-style-overrides", "clr", ""])
+            }
+            appliedAssBold = assBold
+        }
         let styled = usesStyledSubtitles && SubtitleRendering.shared.supportsTextOverlay(codec: codec)
         if styled != styledSubtitleVisible {
             setStringProperty("sub-visibility", styled ? "no" : "yes")
@@ -2323,7 +2459,9 @@ final class MPVPlayerViewController: UIViewController {
 
             guard let tracks else { return }
             DispatchQueue.main.async {
+                guard tracks.audio != self.audioTracks || tracks.subtitles != self.subtitleTracks else { return }
                 self.audioTracks = tracks.audio
+                self.tracksGeneration &+= 1
                 self.subtitleTracks = tracks.subtitles
             }
         }
@@ -2359,10 +2497,10 @@ final class MPVPlayerViewController: UIViewController {
             )
 
             if type == "audio" {
-                audio.append(TrackInfo(index: audioIdx, id: id, type: type, title: displayTitle, lang: lang, selected: selected))
+                audio.append(TrackInfo(index: audioIdx, id: id, type: type, title: displayTitle, lang: lang, codec: codec, selected: selected))
                 audioIdx += 1
             } else if type == "sub" {
-                subs.append(TrackInfo(index: subIdx, id: id, type: type, title: displayTitle, lang: lang, selected: selected))
+                subs.append(TrackInfo(index: subIdx, id: id, type: type, title: displayTitle, lang: lang, codec: codec, selected: selected))
                 subIdx += 1
             }
         }
@@ -2430,7 +2568,7 @@ final class MPVPlayerViewController: UIViewController {
         let base = ifNotBlank(title)
             ?? localizedLanguageName(lang)
             ?? (type == "sub" ? "Subtitle \(index + 1)" : "Track \(index + 1)")
-        let codecName = codecDisplayName(codec) ?? codecDisplayName(decoderDescription)
+        let codecName = type == "sub" ? nil : (codecDisplayName(codec) ?? codecDisplayName(decoderDescription))
         let channelName = type == "audio" ? channelLayoutName(channels: channels, channelCount: channelCount) : nil
         let details = [channelName, codecName]
             .compactMap { $0 }

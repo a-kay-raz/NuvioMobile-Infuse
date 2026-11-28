@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.produceState
@@ -36,7 +35,6 @@ import com.nuvio.app.features.player.skip.PlayerNextEpisodeRules
 import com.nuvio.app.core.logging.InAppLogger
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.features.p2p.P2pStreamingState
@@ -756,6 +754,10 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
             } else {
                 null
             },
+            onCustomizeToolbarClick = {
+                showToolbarCustomizer = true
+                controlsActivityTick += 1
+            },
             onStreamInfoClick = { openStreamInfo() },
             parentalWarnings = parentalWarnings,
             showParentalGuide = showParentalGuide,
@@ -1029,6 +1031,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
         },
         onAudioModalDismissed = { showAudioModal = false },
         showAudioDelay = playerController?.supportsAudioDelay == true,
+        supportsAssStyleCustomization = playerController?.supportsAssStyleCustomization == true,
         audioDelayMs = audioDelayMs,
         onAudioDelayChanged = { delayMs -> setAudioDelay(delayMs) },
         showAudioAmplification = playerController?.supportsAudioAmplification == true,
@@ -1049,7 +1052,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
         addonSubtitles = visibleAddonSubtitles,
         selectedAddonSubtitleId = selectedAddonSubtitleId,
         isLoadingAddonSubtitles = isLoadingAddonSubtitles,
-        subtitleStyle = subtitleStyle,
+        subtitleStyle = activeSubtitleStyle,
         subtitleDelayMs = subtitleDelayMs,
         selectedAddonSubtitle = selectedAddonSubtitle,
         subtitleAutoSyncState = subtitleAutoSyncState,
@@ -1085,7 +1088,13 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
             if (hasBurnedInServerSubtitle) clearServerSubtitleTrack()
         },
         onFetchAddonSubtitles = { fetchAddonSubtitlesForActiveItem() },
-        onSubtitleStyleChanged = PlayerSettingsRepository::setSubtitleStyle,
+        onSubtitleStyleChanged = { style ->
+            if (isAssSubtitleStyleActive) {
+                PlayerSettingsRepository.setAssSubtitleStyle(style)
+            } else {
+                PlayerSettingsRepository.setSubtitleStyle(style)
+            }
+        },
         onSubtitleDelayChanged = { delayMs -> setSubtitleDelay(delayMs) },
         onSubtitleDelayReset = { setSubtitleDelay(0) },
         onSyncByEarClick = { openSubtitleSyncByEar() },
@@ -1284,6 +1293,27 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
                 switchPlaybackEngine()
             },
             onDismiss = { showSwitchEngineConfirm = false },
+        )
+    }
+    val playerSettings by PlayerSettingsRepository.uiState.collectAsStateWithLifecycle()
+    val onToolbarCustomizerDismiss = {
+        showToolbarCustomizer = false
+        controlsVisible = true
+        controlsActivityTick += 1
+    }
+    if (playerSettings.useLegacyPlayerLayout) {
+        LegacyPlayerButtonsSidePanel(
+            visible = showToolbarCustomizer,
+            topLayout = playerSettings.legacyTopButtons,
+            bottomLayout = playerSettings.legacyBottomButtons,
+            onDismiss = onToolbarCustomizerDismiss,
+        )
+    } else {
+        PlayerToolbarSidePanel(
+            visible = showToolbarCustomizer,
+            layout = playerSettings.toolbarLayout,
+            onLayoutChange = PlayerSettingsRepository::setToolbarLayout,
+            onDismiss = onToolbarCustomizerDismiss,
         )
     }
 }

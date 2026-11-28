@@ -3,6 +3,7 @@ package com.nuvio.app.features.addons
 import android.content.Context
 import android.content.SharedPreferences
 import com.nuvio.app.core.diagnostics.SentryNetworkBreadcrumbInterceptor
+import com.nuvio.app.core.network.API_RESPONSE_MAX_BYTES
 import com.nuvio.app.core.network.DynamicDnsOverHttps
 import com.nuvio.app.core.network.IPv4FirstDns
 import com.nuvio.app.core.network.NetworkErrorInterceptor
@@ -191,18 +192,25 @@ private fun readResponseBodyLimited(body: ResponseBody?, maxBytes: Int): String 
 
 private fun readResponseBody(body: ResponseBody?): String {
     if (body == null) return ""
-    var bytes = body.bytes()
+    // Upstream's size cap (addon-response-limit fix): read at most
+    // API_RESPONSE_MAX_BYTES through the stream instead of buffering the
+    // whole body. Our GZIP + charset-detector decode is kept on top of it.
+    val readResult = body.byteStream().use { stream ->
+        readAtMostBytes(stream, API_RESPONSE_MAX_BYTES)
+    }
+    var bytes = readResult.bytes
     if (bytes.size >= 2 && (bytes[0].toInt() and 0xFF) == 0x1F && (bytes[1].toInt() and 0xFF) == 0x8B) {
         bytes = runCatching {
             java.util.zip.GZIPInputStream(java.io.ByteArrayInputStream(bytes)).use { it.readBytes() }
         }.getOrDefault(bytes)
     }
-    return runCatching {
+    val decoded = runCatching {
         com.nuvio.app.features.autosync.SubtitleCharsetDetector.decode(bytes)
     }.getOrElse {
         val charset = body.contentType()?.charset(Charsets.UTF_8) ?: Charsets.UTF_8
         String(bytes, charset)
     }
+    return if (readResult.truncated) "$decoded\n...[truncated]" else decoded
 }
 
 private suspend fun executeTextRequest(
